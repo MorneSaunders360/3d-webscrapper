@@ -33,13 +33,21 @@ namespace WebScrapperFunctionApp
 
                 foreach (var doc in searchResponseprintable.Documents.ToList())
                 {
-                    string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(doc.Thumbnail)}", "images");
-                    if (string.IsNullOrEmpty(link))
+                    try
                     {
-                        doc.Thumbnail = link;
-                        await elasticsearchService.UpsertDocument(doc, doc.Id);
+                        string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(doc.Thumbnail)}", "images");
+                        if (string.IsNullOrEmpty(link))
+                        {
+                            doc.Thumbnail = link;
+                            await elasticsearchService.UpsertDocument(doc, doc.Id);
+                        }
+                        await Task.Delay(2500);
                     }
-                    await Task.Delay(2500);
+                    catch (Exception ex)
+                    {
+                        SentrySdk.CaptureException(ex);
+                    }
+                    
                 }
                 SentrySdk.CaptureMessage($"C# Timer trigger function finished: {DateTime.Now}", SentryLevel.Info);
             }
