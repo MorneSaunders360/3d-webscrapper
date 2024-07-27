@@ -17,7 +17,7 @@ namespace WebScrapperFunctionApp
         [Function("PrintableDetialFunction")]
         public async Task Run([TimerTrigger("*/15 * * * *")] TimerInfo myTimer)
         {
-            SentrySdk.CaptureMessage($"Whoop Whoop: {DateTime.Now}", SentryLevel.Info);
+            SentrySdk.CaptureMessage($"C# Timer trigger Printable Detial function executed at: {DateTime.Now}", SentryLevel.Info);
 
             try
             {
@@ -38,7 +38,6 @@ namespace WebScrapperFunctionApp
                                                  )
                                              );
 
-                int counter = 0;
                 foreach (var printable in searchResponseprintable.Documents.ToList())
                 {
                     if (printable.Type.ToLower() == "printables")
@@ -90,8 +89,6 @@ namespace WebScrapperFunctionApp
 
 
                             }
-                            counter++;
-                            SentrySdk.CaptureMessage($"Whoop Whoop Done: {DateTime.Now} {counter}", SentryLevel.Info);
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
@@ -105,7 +102,7 @@ namespace WebScrapperFunctionApp
                 SentrySdk.CaptureException(ex);
 
             }
-            SentrySdk.CaptureMessage($"Next timer schedule at: {myTimer.ScheduleStatus.Next}", SentryLevel.Info);
+            SentrySdk.CaptureMessage($"C# Timer trigger Printable Detial function finished at: {DateTime.Now}", SentryLevel.Info);
         }
     }
 }

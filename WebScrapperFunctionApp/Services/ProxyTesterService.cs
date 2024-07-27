@@ -11,7 +11,7 @@ namespace WebScrapperFunctionApp.Services
 
     public class ProxyTesterService
     {
-        private static string _testUrl = "http://www.google.com";
+        private static string _testUrl = "https://3dfunction.houselabs.co.za/api/GetHealth";
         public static async Task<List<ProxyInfo>> TestProxiesAsync(List<ProxyInfo> searchResponseprintable)
         {
             var tasks = new List<Task>();
@@ -31,32 +31,54 @@ namespace WebScrapperFunctionApp.Services
             var handler = new HttpClientHandler
             {
                 Proxy = new WebProxy(proxy.Url),
-                UseProxy = true
+                UseProxy = true,
             };
-
-            using var httpClient = new HttpClient(handler);
+           
 
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync(_testUrl);
-                if (response.IsSuccessStatusCode)
+                var httpClient = new HttpClient(handler);
+                var request = new HttpRequestMessage(HttpMethod.Get, _testUrl);
+                request.Headers.Add("Accept", "application/json");
+                var response = await httpClient.SendAsync(request);
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode) 
                 {
-                    Console.WriteLine($"Proxy {proxy.Url} is working. Status code: {response.StatusCode}");
-                    proxy.IsValid = true;
+                    if (IsValidContent(content))
+                    {
+                        Console.WriteLine($"Proxy {proxy.Url} is working. Status code: {response.StatusCode}");
+                        proxy.IsValid = true;
+                        return proxy;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Proxy {proxy.Url} returned invalid content.");
+                        proxy.IsValid = false;
+                    }
                 }
                 else
                 {
-                    proxy.IsValid = false;
                     Console.WriteLine($"Proxy {proxy.Url} returned a non-success status code: {response.StatusCode}");
+                    proxy.IsValid = false;
                 }
+
             }
             catch (Exception ex)
             {
-                proxy.IsValid = false;
                 Console.WriteLine($"Error occurred with proxy {proxy.Url}: {ex.Message}");
+                proxy.IsValid = false;
             }
             return proxy;
         }
+
+        private static bool IsValidContent(string content)
+        {
+            // Implement content validation logic here
+            // For example, check if content contains expected keywords or structure
+            return !string.IsNullOrWhiteSpace(content) && content.Contains("true");
+        }
+
     }
 
 }

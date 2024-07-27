@@ -11,13 +11,13 @@ namespace WebScrapperFunctionApp
         [Function("PrintableImageFunction")]
         public async Task Run([TimerTrigger("*/30 * * * *")] TimerInfo myTimer)
         {
-            SentrySdk.CaptureMessage($"C# Timer trigger function executed at: {DateTime.Now}",SentryLevel.Info);
+            SentrySdk.CaptureMessage($"C# Timer trigger function Printable Image executed at: {DateTime.Now}",SentryLevel.Info);
 
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                              .Size(1000)
+                                              .Size(100)
                                               .Query(q => q
                                                   .Bool(b => b
                                                       .Must(m => m
@@ -49,7 +49,7 @@ namespace WebScrapperFunctionApp
                     }
 
                 }
-                SentrySdk.CaptureMessage($"C# Timer trigger function finished: {DateTime.Now}", SentryLevel.Info);
+                SentrySdk.CaptureMessage($"C# Timer trigger function Printable Image finshed at: {DateTime.Now}", SentryLevel.Info);
             }
         }
     }
