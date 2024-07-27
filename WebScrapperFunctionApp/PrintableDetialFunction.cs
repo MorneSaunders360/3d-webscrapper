@@ -37,7 +37,7 @@ namespace WebScrapperFunctionApp
                                                      )
                                                  )
                                              );
-
+                int Counter = 0;
                 foreach (var printable in searchResponseprintable.Documents.ToList())
                 {
                     if (printable.Type.ToLower() == "printables")
@@ -89,6 +89,7 @@ namespace WebScrapperFunctionApp
 
 
                             }
+                            SentrySdk.CaptureMessage($"Printable Detial Uploaded: {Counter++}", SentryLevel.Info);
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
