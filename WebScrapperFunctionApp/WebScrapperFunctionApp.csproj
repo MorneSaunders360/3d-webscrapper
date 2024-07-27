@@ -9,6 +9,7 @@
   <ItemGroup>
 	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
 	  <PackageReference Include="Aspose.3D" Version="24.6.0" />
+	  <PackageReference Include="CloudProxySharp" Version="1.0.2" />
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.21.0" />
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.1.0" />
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="1.2.0" />

@@ -1,4 +1,7 @@
 using System;
+using System.Linq;
+using System.Net;
+using CloudProxySharp;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -12,13 +15,15 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableDetialFunction")]
-        public async Task Run([TimerTrigger("0 */15 * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("*/15 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"Whoop Whoop: {DateTime.Now}", SentryLevel.Info);
 
             try
             {
+
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
+               
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
                                                  .Size(5)
                                                  .Query(q => q
@@ -58,7 +63,7 @@ namespace WebScrapperFunctionApp
                                 Thumbnail = ThumbnailLink,
                                 Url = $"https://www.printables.com/model/{printable.Id.Replace("_Printables", string.Empty)}",
                                 Volume = 0,
-       
+
                             };
                             var files = PrintablesDetialApi.Data.Print.Stls.ToList();
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
@@ -86,7 +91,7 @@ namespace WebScrapperFunctionApp
 
                             }
                             counter++;
-                            SentrySdk.CaptureMessage($"Whoop Whoop: {DateTime.Now} {counter}", SentryLevel.Info);
+                            SentrySdk.CaptureMessage($"Whoop Whoop Done: {DateTime.Now} {counter}", SentryLevel.Info);
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
