@@ -29,7 +29,7 @@ namespace WebScrapperFunctionApp
                 try
                 {
                     var client = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Get, "https://advanced.name/freeproxy/66a4d08e6f93e?type=http"); ;
+                    var request = new HttpRequestMessage(HttpMethod.Get, "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=1000&country=all&ssl=no&anonymity=all"); ;
                     var response = await client.SendAsync(request);
 
                     var json = await response.Content.ReadAsStringAsync();

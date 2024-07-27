@@ -33,44 +33,47 @@ namespace WebScrapperFunctionApp.Services
                 Proxy = new WebProxy(proxy.Url),
                 UseProxy = true,
             };
-           
 
             try
             {
                 var httpClient = new HttpClient(handler);
                 var request = new HttpRequestMessage(HttpMethod.Get, _testUrl);
                 request.Headers.Add("Accept", "application/json");
-                var response = await httpClient.SendAsync(request);
-                var content = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode) 
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew(); // Start measuring time
+                var response = await httpClient.SendAsync(request);
+                stopwatch.Stop(); // Stop measuring time
+
+                var content = await response.Content.ReadAsStringAsync();
+                proxy.ResponseTime = stopwatch.ElapsedMilliseconds; // Set response time
+
+                if (response.IsSuccessStatusCode)
                 {
                     if (IsValidContent(content))
                     {
-                        Console.WriteLine($"Proxy {proxy.Url} is working. Status code: {response.StatusCode}");
+                        Console.WriteLine($"Proxy {proxy.Url} is working. Status code: {response.StatusCode}. Response time: {proxy.ResponseTime} ms");
                         proxy.IsValid = true;
-                        return proxy;
                     }
                     else
                     {
-                        Console.WriteLine($"Proxy {proxy.Url} returned invalid content.");
+                        Console.WriteLine($"Proxy {proxy.Url} returned invalid content. Response time: {proxy.ResponseTime} ms");
                         proxy.IsValid = false;
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"Proxy {proxy.Url} returned a non-success status code: {response.StatusCode}");
+                    Console.WriteLine($"Proxy {proxy.Url} returned a non-success status code: {response.StatusCode}. Response time: {proxy.ResponseTime} ms");
                     proxy.IsValid = false;
                 }
-
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error occurred with proxy {proxy.Url}: {ex.Message}");
+                Console.WriteLine($"Error occurred with proxy {proxy.Url}: {ex.Message}. Response time: {proxy.ResponseTime} ms");
                 proxy.IsValid = false;
             }
             return proxy;
         }
+
 
         private static bool IsValidContent(string content)
         {
