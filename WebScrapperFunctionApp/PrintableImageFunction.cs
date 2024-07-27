@@ -9,7 +9,7 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableImageFunction")]
-        public async Task Run([TimerTrigger("0 */59 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */2 * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"C# Timer trigger function executed at: {DateTime.Now}",SentryLevel.Info);
 
