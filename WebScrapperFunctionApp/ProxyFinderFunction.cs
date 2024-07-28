@@ -22,45 +22,60 @@ namespace WebScrapperFunctionApp
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<ProxyInfo>("proxies");
-                var searchResponseprintable = await elasticsearchService.SearchAllDocumentsAsync();
 
+                
 
                 try
                 {
-                    var client = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Get, "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=1000&country=all&ssl=no&anonymity=all"); ;
-                    var response = await client.SendAsync(request);
-
-                    var json = await response.Content.ReadAsStringAsync();
-                    string[] proxyArray = json.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-
-                    foreach (var proxy in proxyArray.ToList())
+                    // Fetch existing proxies from Elasticsearch
+                    var existingProxies = await elasticsearchService.SearchAllDocumentsAsync(); // Implement this method to fetch all proxies
+                    List<ProxyInfo> validExistingProxies = await ProxyTesterService.TestProxiesAsync(existingProxies);
+                    // If the count of valid proxies is below 5, fetch new proxies
+                    if (validExistingProxies.Where(x=>x.IsValid).ToList().Count < 5)
                     {
-                        searchResponseprintable.Add(new ProxyInfo
+                        var client = new HttpClient();
+                        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=1000&country=all&ssl=no&anonymity=all");
+                        var response = await client.SendAsync(request);
+
+                        var json = await response.Content.ReadAsStringAsync();
+                        string[] proxyArray = json.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+
+                        var proxiesToTest = proxyArray.Select(proxy => new ProxyInfo
                         {
                             Id = Guid.NewGuid(),
                             Url = proxy,
                             IsValid = false
-                        });
-                    }
-                    List<ProxyInfo> TestedProxies = await ProxyTesterService.TestProxiesAsync(searchResponseprintable);
-                    foreach (var item in TestedProxies)
-                    {
-                        if (item.IsValid)
-                        {
-                           await elasticsearchService.UpsertDocument(item, item.Id);
-                        }
-                        else
+                        }).ToList();
+
+                        // Test all proxies and get the result including response times
+                        List<ProxyInfo> testedProxies = await ProxyTesterService.TestProxiesAsync(proxiesToTest);
+
+                        // Sort proxies by response time and select the top 15
+                        var topProxies = testedProxies
+                            .Where(proxy => proxy.IsValid) // Only include valid proxies
+                            .OrderBy(proxy => proxy.ResponseTime) // Assuming ResponseTime is a property of ProxyInfo
+                            .Take(15)
+                            .ToList();
+
+                        foreach (var item in existingProxies)
                         {
                             elasticsearchService.DeleteDocument(DocumentPath<ProxyInfo>.Id(item));
                         }
-                        
+
+                        // Add only the top 15 fastest proxies
+                        foreach (var proxy in topProxies)
+                        {
+                            await elasticsearchService.UpsertDocument(proxy, proxy.Id);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     SentrySdk.CaptureException(ex);
                 }
+
+
+
                 SentrySdk.CaptureMessage($"TimerTrigger - ProxyFinderFunction Finished{DateTime.Now}");
             }
         }

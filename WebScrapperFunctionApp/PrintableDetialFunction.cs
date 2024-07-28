@@ -20,14 +20,14 @@ namespace WebScrapperFunctionApp
         public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction {DateTime.Now}");
-            
+
             try
             {
 
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
-               
+
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                                 .Size(30)
+                                                 .Size(100)
                                                  .Query(q => q
                                                      .Bool(b => b
                                                          .Must(m => m
@@ -40,7 +40,7 @@ namespace WebScrapperFunctionApp
                                                  )
                                              );
                 int Counter = 0;
-                foreach (var printable in searchResponseprintable.Documents.ToList())
+                var tasks = searchResponseprintable.Documents.Select(async printable =>
                 {
                     if (printable.Type.ToLower() == "printables")
                     {
@@ -97,8 +97,9 @@ namespace WebScrapperFunctionApp
                         }
 
                     }
-                }
+                });
 
+                await Task.WhenAll(tasks);
 
             }
             catch (Exception ex)
