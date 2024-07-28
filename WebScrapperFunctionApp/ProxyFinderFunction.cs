@@ -18,8 +18,8 @@ namespace WebScrapperFunctionApp
         [Function("ProxyFinderFunction")]
         public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
-            SentrySdk.CaptureMessage($"C# Timer trigger proxy function executed at: {DateTime.Now}",SentryLevel.Info);
-
+            var transaction = SentrySdk.StartTransaction("TimerTrigger - ProxyFinderFunction", "ProxyFinderFunction");
+            SentrySdk.ConfigureScope(scope => scope.Transaction = transaction);
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<ProxyInfo>("proxies");
@@ -62,7 +62,7 @@ namespace WebScrapperFunctionApp
                 {
                     SentrySdk.CaptureException(ex);
                 }
-                SentrySdk.CaptureMessage($"C# Timer trigger proxy function finished: {DateTime.Now}", SentryLevel.Info);
+                transaction.Finish();
             }
         }
     }

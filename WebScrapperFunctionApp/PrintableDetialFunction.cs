@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using CloudProxySharp;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -17,8 +18,9 @@ namespace WebScrapperFunctionApp
         [Function("PrintableDetialFunction")]
         public async Task Run([TimerTrigger("*0 */30 * * * *")] TimerInfo myTimer)
         {
-            SentrySdk.CaptureMessage($"C# Timer trigger Printable Detial function executed at: {DateTime.Now}", SentryLevel.Info);
-
+            var transaction = SentrySdk.StartTransaction("TimerTrigger - PrintableDetialFunction", "PrintableDetialFunction");
+            SentrySdk.ConfigureScope(scope => scope.Transaction = transaction);
+            
             try
             {
 
@@ -89,7 +91,7 @@ namespace WebScrapperFunctionApp
 
 
                             }
-                            SentrySdk.CaptureMessage($"Printable Detial Uploaded: {Counter++}", SentryLevel.Info);
+                            transaction.AddBreadcrumb(new Breadcrumb($"{Counter++}", "Printable Detial Uploaded"));
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
@@ -103,7 +105,7 @@ namespace WebScrapperFunctionApp
                 SentrySdk.CaptureException(ex);
 
             }
-            SentrySdk.CaptureMessage($"C# Timer trigger Printable Detial function finished at: {DateTime.Now}", SentryLevel.Info);
+            transaction.Finish();
         }
     }
 }

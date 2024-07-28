@@ -11,8 +11,8 @@ namespace WebScrapperFunctionApp
         [Function("PrintableImageFunction")]
         public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer)
         {
-            SentrySdk.CaptureMessage($"C# Timer trigger function Printable Image executed at: {DateTime.Now}", SentryLevel.Info);
-
+            var transaction = SentrySdk.StartTransaction("TimerTrigger - PrintableImageFunction", "PrintableImageFunction");
+            SentrySdk.ConfigureScope(scope => scope.Transaction = transaction);
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
@@ -40,8 +40,9 @@ namespace WebScrapperFunctionApp
                         {
                             doc.Thumbnail = link;
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
+                            transaction.AddBreadcrumb(new Breadcrumb($"{Counter++}", "Printable Image Uploaded"));
                         }
-                        SentrySdk.CaptureMessage($"Printable Image Uploaded: {Counter++}", SentryLevel.Info);
+                        
                     }
                     catch (Exception ex)
                     {
@@ -49,7 +50,7 @@ namespace WebScrapperFunctionApp
                     }
 
                 }
-                SentrySdk.CaptureMessage($"C# Timer trigger function Printable Image finshed at: {DateTime.Now}", SentryLevel.Info);
+                transaction.Finish();
             }
         }
     }
