@@ -16,7 +16,7 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("ProxyFinderFunction")]
-        public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */59 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"TimerTrigger - ProxyFinderFunction {DateTime.Now}");
             if (myTimer.ScheduleStatus is not null)

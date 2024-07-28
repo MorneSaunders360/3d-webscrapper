@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -16,7 +17,7 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableDetialFunction")]
-        public async Task Run([TimerTrigger("*0 */15 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction {DateTime.Now}");
             
@@ -26,7 +27,7 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                                 .Size(5)
+                                                 .Size(30)
                                                  .Query(q => q
                                                      .Bool(b => b
                                                          .Must(m => m
@@ -90,7 +91,8 @@ namespace WebScrapperFunctionApp
 
 
                             }
-                            SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter++}");
+                            SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter++} {printable?.Id}");
+                            Console.WriteLine($"Printable Detial Uploaded {Counter++}");
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
@@ -101,6 +103,7 @@ namespace WebScrapperFunctionApp
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Printable Detial Exception {ex}");
                 SentrySdk.CaptureException(ex);
 
             }

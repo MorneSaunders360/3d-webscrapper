@@ -9,14 +9,15 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableImageFunction")]
-        public async Task Run([TimerTrigger("0 */5 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"TimerTrigger - PrintableImageFunction {DateTime.Now}");
+
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                              .Size(20)
+                                              .Size(100)
                                               .Query(q => q
                                                   .Bool(b => b
                                                       .Must(m => m
@@ -30,27 +31,29 @@ namespace WebScrapperFunctionApp
                                           );
 
                 int Counter = 0;
-                foreach (var doc in searchResponseprintable.Documents.ToList())
+                var tasks = searchResponseprintable.Documents.Select(async doc =>
                 {
                     try
                     {
                         string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(doc.Thumbnail)}", "images");
-                        if (string.IsNullOrEmpty(link))
+                        if (!string.IsNullOrEmpty(link))
                         {
                             doc.Thumbnail = link;
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
                             SentrySdk.CaptureMessage($"Printable Image Uploaded {Counter++}");
+                            Console.WriteLine($"Printable Image Uploaded {Counter++}");
                         }
-                        
                     }
                     catch (Exception ex)
                     {
                         SentrySdk.CaptureException(ex);
                     }
+                });
 
-                }
-                SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction Finished{DateTime.Now}");
+                await Task.WhenAll(tasks);
+                SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetailFunction Finished {DateTime.Now}");
             }
+
         }
     }
 }
