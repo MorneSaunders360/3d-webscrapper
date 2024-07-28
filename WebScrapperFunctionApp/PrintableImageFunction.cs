@@ -9,15 +9,14 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableImageFunction")]
-        public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */5 * * * *")] TimerInfo myTimer)
         {
-            var transaction = SentrySdk.StartTransaction("TimerTrigger - PrintableImageFunction", "PrintableImageFunction");
-            SentrySdk.ConfigureScope(scope => scope.Transaction = transaction);
+            SentrySdk.CaptureMessage($"TimerTrigger - PrintableImageFunction {DateTime.Now}");
             if (myTimer.ScheduleStatus is not null)
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                              .Size(500)
+                                              .Size(20)
                                               .Query(q => q
                                                   .Bool(b => b
                                                       .Must(m => m
@@ -40,7 +39,7 @@ namespace WebScrapperFunctionApp
                         {
                             doc.Thumbnail = link;
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
-                            transaction.AddBreadcrumb(new Breadcrumb($"{Counter++}", "Printable Image Uploaded"));
+                            SentrySdk.CaptureMessage($"Printable Image Uploaded {Counter++}");
                         }
                         
                     }
@@ -50,7 +49,7 @@ namespace WebScrapperFunctionApp
                     }
 
                 }
-                transaction.Finish();
+                SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction Finished{DateTime.Now}");
             }
         }
     }

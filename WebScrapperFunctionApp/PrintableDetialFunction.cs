@@ -16,10 +16,9 @@ namespace WebScrapperFunctionApp
     {
 
         [Function("PrintableDetialFunction")]
-        public async Task Run([TimerTrigger("*0 */30 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("*0 */15 * * * *")] TimerInfo myTimer)
         {
-            var transaction = SentrySdk.StartTransaction("TimerTrigger - PrintableDetialFunction", "PrintableDetialFunction");
-            SentrySdk.ConfigureScope(scope => scope.Transaction = transaction);
+            SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction {DateTime.Now}");
             
             try
             {
@@ -27,7 +26,7 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                                 .Size(10)
+                                                 .Size(5)
                                                  .Query(q => q
                                                      .Bool(b => b
                                                          .Must(m => m
@@ -91,7 +90,7 @@ namespace WebScrapperFunctionApp
 
 
                             }
-                            transaction.AddBreadcrumb(new Breadcrumb($"{Counter++}", "Printable Detial Uploaded"));
+                            SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter++}");
                             await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                         }
 
@@ -105,7 +104,7 @@ namespace WebScrapperFunctionApp
                 SentrySdk.CaptureException(ex);
 
             }
-            transaction.Finish();
+            SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction Finished{DateTime.Now}");
         }
     }
 }
