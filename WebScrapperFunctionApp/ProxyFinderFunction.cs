@@ -1,4 +1,5 @@
 using System;
+using Aspose.ThreeD;
 using Aspose.ThreeD.Shading;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -23,15 +24,19 @@ namespace WebScrapperFunctionApp
             {
                 var elasticsearchService = new ElasticsearchService<ProxyInfo>("proxies");
 
-                
+
 
                 try
                 {
                     // Fetch existing proxies from Elasticsearch
                     var existingProxies = await elasticsearchService.SearchAllDocumentsAsync(); // Implement this method to fetch all proxies
                     List<ProxyInfo> validExistingProxies = await ProxyTesterService.TestProxiesAsync(existingProxies);
+                    foreach (var item in validExistingProxies.Where(x => x.IsValid == false))
+                    {
+                        elasticsearchService.DeleteDocument(DocumentPath<ProxyInfo>.Id(item));
+                    }
                     // If the count of valid proxies is below 5, fetch new proxies
-                    if (validExistingProxies.Where(x=>x.IsValid).ToList().Count < 5)
+                    if (validExistingProxies.Where(x => x.IsValid).ToList().Count < 5)
                     {
                         var client = new HttpClient();
                         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=1000&country=all&ssl=no&anonymity=all");
