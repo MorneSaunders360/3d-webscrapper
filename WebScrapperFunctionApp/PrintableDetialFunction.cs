@@ -27,18 +27,38 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
 
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                                 .Size(100)
-                                                 .Query(q => q
-                                                     .Bool(b => b
-                                                         .Must(m => m
-                                                             .Term(t => t
-                                                                 .Field(f => f.PrintableDetials)
-                                                                 .Value(null)
-                                                             )
-                                                         )
-                                                     )
-                                                 )
-                                             );
+                                            .Size(100)
+                                            .Query(q => q
+                                                .Bool(b => b
+                                                    .Must(m => m
+                                                        .Bool(b2 => b2
+                                                            .Should(sh => sh
+                                                                .Term(t => t
+                                                                    .Field(f => f.PrintableDetials)
+                                                                    .Value(null)
+                                                                )
+                                                            )
+                                                            .Should(sh => sh
+                                                                .Nested(n => n
+                                                                    .Path(p => p.PrintableDetials)
+                                                                    .Query(nq => nq
+                                                                        .Bool(nqb => nqb
+                                                                            .Must(m2 => m2
+                                                                                .Term(t2 => t2
+                                                                                    .Field(f => f.PrintableDetials.Zip_data)
+                                                                                    .Value(null)
+                                                                                )
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        );
+
                 int Counter = 0;
                 var tasks = searchResponseprintable.Documents.Select(async printable =>
                 {
