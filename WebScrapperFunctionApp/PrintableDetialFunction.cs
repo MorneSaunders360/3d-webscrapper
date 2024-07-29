@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebScrapperFunctionApp.Dto;
 using WebScrapperFunctionApp.Dto.PrintablesDetial;
+using static System.Net.WebRequestMethods;
 
 namespace WebScrapperFunctionApp
 {
@@ -27,7 +28,7 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
 
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                            .Size(100)
+                                            .Size(300)
                                             .Query(q => q
                                                 .Bool(b => b
                                                     .Must(m => m
@@ -76,7 +77,8 @@ namespace WebScrapperFunctionApp
                             if (response.IsSuccessStatusCode)
                             {
                                 PrintablesDetialApi PrintablesDetialApi = JsonConvert.DeserializeObject<PrintablesDetialApi>(await response.Content.ReadAsStringAsync());
-                                string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
+                                //string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
+                                string ThumbnailLink = "https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath;
                                 printable.PrintableDetials = new PrintableDetials()
                                 {
                                     Creator = new Creator { FirstName = PrintablesDetialApi.Data.Print.User.PublicUsername, LastName = PrintablesDetialApi.Data.Print.User.PublicUsername, Name = PrintablesDetialApi.Data.Print.User.Handle },
@@ -89,7 +91,6 @@ namespace WebScrapperFunctionApp
 
                                 };
                                 var files = PrintablesDetialApi.Data.Print.Stls.ToList();
-                                await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                                 if (files.Count > 0)
                                 {
                                     printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
@@ -104,17 +105,19 @@ namespace WebScrapperFunctionApp
                                         if (responseFile.IsSuccessStatusCode)
                                         {
                                             JObject jsonObject = JObject.Parse(await responseFile.Content.ReadAsStringAsync());
-                                            string link = await BlobSerivce.UploadFile(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString(), $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString())}", "stl");
-                                            printable.PrintableDetials.Zip_data.Files.Add(new WebScrapperFunctionApp.Dto.File { url = link, name = item.Name });
+                                            //string link = await BlobSerivce.UploadFile(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString(), $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString())}", "stl");
+                                            printable.PrintableDetials.Zip_data.Files.Add(new WebScrapperFunctionApp.Dto.File { url = jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString(), name = item.Name });
                                         }
+                                        printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
 
-                                        printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile("https://files.printables.com/" + item.FilePreviewPath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(item.FilePreviewPath)}", "images") });
+                                        //printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile("https://files.printables.com/" + item.FilePreviewPath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(item.FilePreviewPath)}", "images") });
                                     }
 
 
                                 }
-                                SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter++} {printable?.Id}");
-                                Console.WriteLine($"Printable Detial Uploaded {Counter++}");
+                                Counter++;
+                                SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter} {printable?.Id}");
+                                Console.WriteLine($"Printable Detial Uploaded {Counter}");
                                 await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                             }
 
@@ -124,7 +127,7 @@ namespace WebScrapperFunctionApp
                     {
                         SentrySdk.CaptureException(ex);
                     }
-                   
+
                 });
 
                 await Task.WhenAll(tasks);
