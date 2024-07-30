@@ -17,7 +17,7 @@ namespace WebScrapperFunctionApp
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                              .Size(1500)
+                                              .Size(1000)
                                               .Query(q => q
                                                   .Bool(b => b
                                                       .Must(m => m

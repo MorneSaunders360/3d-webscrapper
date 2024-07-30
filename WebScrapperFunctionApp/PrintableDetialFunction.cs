@@ -28,7 +28,7 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
 
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                            .Size(300)
+                                            .Size(1000)
                                             .Query(q => q
                                                 .Bool(b => b
                                                     .Must(m => m
@@ -77,8 +77,7 @@ namespace WebScrapperFunctionApp
                             if (response.IsSuccessStatusCode)
                             {
                                 PrintablesDetialApi PrintablesDetialApi = JsonConvert.DeserializeObject<PrintablesDetialApi>(await response.Content.ReadAsStringAsync());
-                                //string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
-                                string ThumbnailLink = "https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath;
+                                string ThumbnailLink = "https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image?.FilePath ?? string.Empty;
                                 printable.PrintableDetials = new PrintableDetials()
                                 {
                                     Creator = new Creator { FirstName = PrintablesDetialApi.Data.Print.User.PublicUsername, LastName = PrintablesDetialApi.Data.Print.User.PublicUsername, Name = PrintablesDetialApi.Data.Print.User.Handle },
@@ -96,21 +95,10 @@ namespace WebScrapperFunctionApp
                                     printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
                                     foreach (var item in files)
                                     {
-                                        var clientFile = new HttpClient();
-                                        var requestFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
-                                        requestFile.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0");
-                                        var contentFile = new StringContent("{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{FileId}\",\"fileType\":\"stl\",\"printId\":\"{PrintId}\",\"source\":\"model_detail\"}}".Replace("{FileId}", item.Id).Replace("{PrintId}", PrintablesDetialApi.Data.Print.Id), null, "application/json");
-                                        requestFile.Content = contentFile;
-                                        var responseFile = await clientFile.SendAsync(requestFile);
-                                        if (responseFile.IsSuccessStatusCode)
-                                        {
-                                            JObject jsonObject = JObject.Parse(await responseFile.Content.ReadAsStringAsync());
-                                            //string link = await BlobSerivce.UploadFile(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString(), $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString())}", "stl");
-                                            printable.PrintableDetials.Zip_data.Files.Add(new WebScrapperFunctionApp.Dto.File { url = jsonObject["data"]["getDownloadLink"]["output"]["link"].ToString(), name = item.Name });
-                                        }
-                                        printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
 
-                                        //printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile("https://files.printables.com/" + item.FilePreviewPath, $"{Guid.NewGuid()}_{Guid.NewGuid()}.{Path.GetExtension(item.FilePreviewPath)}", "images") });
+                                        printable.PrintableDetials.Zip_data.Files.Add(new WebScrapperFunctionApp.Dto.File { url = "empty", name = item.Name, id = item.Id });
+
+                                        printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
                                     }
 
 
