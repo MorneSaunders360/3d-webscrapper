@@ -3,6 +3,7 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using CloudProxySharp;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -14,9 +15,16 @@ using static System.Net.WebRequestMethods;
 
 namespace WebScrapperFunctionApp
 {
+   
     public class PrintableDetialFunction
     {
-
+        public static async Task<IPAddress?> GetExternalIpAddress()
+        {
+            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
+                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+            if (!IPAddress.TryParse(externalIpString, out var ipAddress)) return null;
+            return ipAddress;
+        }
         [Function("PrintableDetialFunction")]
         public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
@@ -24,7 +32,7 @@ namespace WebScrapperFunctionApp
 
             try
             {
-
+                Console.WriteLine(await GetExternalIpAddress());
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
 
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s

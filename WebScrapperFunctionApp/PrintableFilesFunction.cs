@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using CloudProxySharp;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -17,12 +18,20 @@ namespace WebScrapperFunctionApp
 {
     public class PrintableFilesFunction
     {
+        public static async Task<IPAddress?> GetExternalIpAddress()
+        {
+            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
+                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+            if (!IPAddress.TryParse(externalIpString, out var ipAddress)) return null;
+            return ipAddress;
+        }
+
 
         [Function("PrintableFilesFunction")]
         public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
             SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction {DateTime.Now}");
-
+            Console.WriteLine(await GetExternalIpAddress());
             try
             {
 

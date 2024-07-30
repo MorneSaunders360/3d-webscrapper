@@ -1,4 +1,6 @@
 using System;
+using System.Net.Sockets;
+using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using WebScrapperFunctionApp.Dto;
@@ -7,7 +9,13 @@ namespace WebScrapperFunctionApp
 {
     public class PrintableImageFunction
     {
-
+        public static async Task<IPAddress?> GetExternalIpAddress()
+        {
+            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
+                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+            if (!IPAddress.TryParse(externalIpString, out var ipAddress)) return null;
+            return ipAddress;
+        }
         [Function("PrintableImageFunction")]
         public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
         {
@@ -15,6 +23,7 @@ namespace WebScrapperFunctionApp
 
             if (myTimer.ScheduleStatus is not null)
             {
+                Console.WriteLine(await GetExternalIpAddress());
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
                                               .Size(1000)
