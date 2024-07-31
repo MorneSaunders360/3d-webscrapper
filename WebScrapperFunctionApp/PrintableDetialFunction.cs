@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using CloudProxySharp;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -15,61 +17,35 @@ using static System.Net.WebRequestMethods;
 
 namespace WebScrapperFunctionApp
 {
-   
+
     public class PrintableDetialFunction
     {
-        public static async Task<IPAddress?> GetExternalIpAddress()
+
+
+        [Function("PrintableDetialFunctionHttp")]
+        public async Task<IActionResult> PrintableDetialFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
         {
-            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
-                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
-            if (!IPAddress.TryParse(externalIpString, out var ipAddress)) return null;
-            return ipAddress;
-        }
-        [Function("PrintableDetialFunction")]
-        public async Task Run([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer)
-        {
-            SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction {DateTime.Now}");
 
             try
             {
-                Console.WriteLine(await GetExternalIpAddress());
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
-
+                int Size = int.Parse(req.Query["Size"]);
                 var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                            .Size(1000)
-                                            .Query(q => q
-                                                .Bool(b => b
-                                                    .Must(m => m
-                                                        .Bool(b2 => b2
-                                                            .Should(sh => sh
-                                                                .Term(t => t
-                                                                    .Field(f => f.PrintableDetials)
-                                                                    .Value(null)
-                                                                )
-                                                            )
-                                                            .Should(sh => sh
-                                                                .Nested(n => n
-                                                                    .Path(p => p.PrintableDetials)
-                                                                    .Query(nq => nq
-                                                                        .Bool(nqb => nqb
-                                                                            .Must(m2 => m2
-                                                                                .Term(t2 => t2
-                                                                                    .Field(f => f.PrintableDetials.Zip_data)
-                                                                                    .Value(null)
-                                                                                )
-                                                                            )
-                                                                        )
-                                                                    )
-                                                                )
-                                                            )
-                                                        )
-                                                    )
-                                                )
-                                            )
-                                        );
+                                              .Size(Size)
+                                              .Query(q => q
+                                                  .Bool(b => b
+                                                      .MustNot(mn => mn
+                                                          .Exists(e => e
+                                                              .Field(f => f.PrintableDetials)
+                                                          )
+                                                      )
+                                                  )
+                                              )
+                                          );
 
-                int Counter = 0;
-                var tasks = searchResponseprintable.Documents.Select(async printable =>
+
+                Console.WriteLine($"Found Printable Detial For Processsing {searchResponseprintable.Documents.Count()}");
+                foreach (var printable in searchResponseprintable.Documents)
                 {
                     try
                     {
@@ -85,7 +61,7 @@ namespace WebScrapperFunctionApp
                             if (response.IsSuccessStatusCode)
                             {
                                 PrintablesDetialApi PrintablesDetialApi = JsonConvert.DeserializeObject<PrintablesDetialApi>(await response.Content.ReadAsStringAsync());
-                                string ThumbnailLink = "https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image?.FilePath ?? string.Empty;
+                                string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
                                 printable.PrintableDetials = new PrintableDetials()
                                 {
                                     Creator = new Creator { FirstName = PrintablesDetialApi.Data.Print.User.PublicUsername, LastName = PrintablesDetialApi.Data.Print.User.PublicUsername, Name = PrintablesDetialApi.Data.Print.User.Handle },
@@ -97,23 +73,59 @@ namespace WebScrapperFunctionApp
                                     Volume = 0,
 
                                 };
-                                var files = PrintablesDetialApi.Data.Print.Stls.ToList();
-                                if (files.Count > 0)
+                                printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
+                                if (printable.Type.ToLower() == "printables")
                                 {
-                                    printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
-                                    foreach (var item in files)
+                                    var clientPack = new HttpClient();
+                                    var requestPack = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                    requestPack.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
+                                    var contentPack = new StringContent("{\"query\":\"query PrintFiles($id: ID!) {\\n  print(id: $id) {\\n\\n    downloadPacks {\\n      id\\n      name\\n      fileSize\\n      fileType\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\",\"variables\":{\"id\":\"{Id}\"}}".Replace("{Id}", printable.Id.Replace("_Printables", string.Empty)), null, "application/json");
+                                    requestPack.Content = contentPack;
+                                    var responsePack = await client.SendAsync(requestPack);
+                                    responsePack.EnsureSuccessStatusCode();
+                                    var responseContentPack = await responsePack.Content.ReadAsStringAsync();
+
+                                    // Parse the JSON response using JObject
+                                    var json = JObject.Parse(responseContentPack);
+                                    var downloadPacks = json["data"]["print"]["downloadPacks"];
+                                    var downloadPackId = "";
+
+                                    foreach (var pack in downloadPacks)
                                     {
+                                        if ((string)pack["fileType"] == "MODEL_FILES")
+                                        {
+                                            downloadPackId = (string)pack["id"];
+                                            break;
+                                        }
+                                    }
+                                    var clientDownloadPackLink = new HttpClient();
+                                    var requestDownloadPackLink = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                    request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
+                                    var contentDownloadPackLink = new StringContent("{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"pack\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", downloadPackId).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty)), null, "application/json");
+                                    requestDownloadPackLink.Content = contentDownloadPackLink;
+                                    var responseDownloadPackLink = await clientDownloadPackLink.SendAsync(requestDownloadPackLink);
+                                    responseDownloadPackLink.EnsureSuccessStatusCode();
+                                    var responseBodyDownloadPackLink = await responseDownloadPackLink.Content.ReadAsStringAsync();
 
-                                        printable.PrintableDetials.Zip_data.Files.Add(new WebScrapperFunctionApp.Dto.File { url = "empty", name = item.Name, id = item.Id });
+                                    var jsonDownloadPackLink = JObject.Parse(responseBodyDownloadPackLink);
+                                    var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
 
-                                        printable.PrintableDetials.Zip_data.Images.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
+                                    var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
+                                    updatedFiles.AddRange(await BlobSerivce.UploadZipContent(downloadLink, "stl"));
+                                    printable.PrintableDetials.Zip_data.Files = updatedFiles;
+
+                                    var Images = printable.PrintableDetials.Zip_data.Images.ToList();
+                                    var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
+
+                                    foreach (var item in Images)
+                                    {
+                                        updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
                                     }
 
+                                    // Update the original collection after iteration
+                                    printable.PrintableDetials.Zip_data.Images = updatedImages;
 
                                 }
-                                Counter++;
-                                SentrySdk.CaptureMessage($"Printable Detial Uploaded {Counter} {printable?.Id}");
-                                Console.WriteLine($"Printable Detial Uploaded {Counter}");
                                 await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                             }
 
@@ -123,10 +135,9 @@ namespace WebScrapperFunctionApp
                     {
                         SentrySdk.CaptureException(ex);
                     }
+                }
 
-                });
 
-                await Task.WhenAll(tasks);
 
             }
             catch (Exception ex)
@@ -135,7 +146,7 @@ namespace WebScrapperFunctionApp
                 SentrySdk.CaptureException(ex);
 
             }
-            SentrySdk.CaptureMessage($"TimerTrigger - PrintableDetialFunction Finished{DateTime.Now}");
+            return new OkObjectResult($"TimerTrigger - PrintableDetialFunction Finished {DateTime.Now}");
         }
     }
 }

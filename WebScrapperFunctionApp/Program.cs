@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using System.Net;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nest;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -25,7 +26,44 @@ namespace WebScrapperFunctionApp.Services
 
             return searchResponseprintable;
         }
+        public static async Task<ProxyInfo> GetActiveProxyAsync()
+        {
+            var elasticsearchServiceProxies = new ElasticsearchService<ProxyInfo>("proxies");
 
+            // Fetch all proxy documents from Elasticsearch
+            var searchResponseProxies = await elasticsearchServiceProxies.SearchAllDocumentsAsync();
+            var proxiesList = searchResponseProxies.ToList();
+
+            // Sort proxies by response time (ascending order)
+            proxiesList.Sort((a, b) => a.ResponseTime.CompareTo(b.ResponseTime));
+
+            ProxyInfo useProxy = null;
+            bool isProxyActive = false;
+
+            while (!isProxyActive && proxiesList.Count > 0)
+            {
+                // Pick the proxy with the fastest response time
+                useProxy = proxiesList[0];
+
+                // Test the selected proxy
+                var proxyTestResult = await ProxyTesterService.TestProxyAsync(useProxy);
+
+                if (proxyTestResult.IsValid)
+                {
+                    // If the proxy is valid, set the flag to true
+                    isProxyActive = true;
+                }
+                else
+                {
+                    // If the proxy is not valid, remove it from the list and Elasticsearch
+                    elasticsearchServiceProxies.DeleteDocument(DocumentPath<ProxyInfo>.Id(useProxy.Id));
+                    proxiesList.RemoveAt(0); // Remove the first item in the sorted list
+                }
+            }
+
+            // Return the valid proxy if found, otherwise return null or handle accordingly
+            return isProxyActive ? useProxy : null;
+        }
         private static async Task<ProxyInfo> TestProxyAsync(ProxyInfo proxy)
         {
             var handler = new HttpClientHandler
