@@ -21,7 +21,7 @@ namespace WebScrapperFunctionApp
             try
             {
                 IMinioClient minio = new MinioClient()
-                                        .WithEndpoint("threedprintingservices.com")
+                                        .WithEndpoint("s3storage.threedprintingservices.com")
                                         .WithCredentials("5LW1eSOLVXSWCabAyKEj", "SdRrRqCXObDnbOtArqKofkiTdPzmum4zF5mYvzna")
                                         .WithSSL()
                                         .Build();
@@ -53,7 +53,7 @@ namespace WebScrapperFunctionApp
 
                     await minio.PutObjectAsync(putObjectArgs);
 
-                    string fileUrl = $"https://threedprintingservices.com/{bucketName}/{uniqueFileName}";
+                    string fileUrl = $"https://s3storage.threedprintingservices.com/{bucketName}/{uniqueFileName}";
 
                     // Create and add File object to the list
                     uploadedFiles.Add(new Dto.File
@@ -75,7 +75,7 @@ namespace WebScrapperFunctionApp
             try
             {
                 IMinioClient minio = new MinioClient()
-                                        .WithEndpoint("threedprintingservices.com")
+                                        .WithEndpoint("s3storage.threedprintingservices.com")
                                         .WithCredentials("5LW1eSOLVXSWCabAyKEj", "SdRrRqCXObDnbOtArqKofkiTdPzmum4zF5mYvzna")
                                         .WithSSL()
                                         .Build();
@@ -101,7 +101,7 @@ namespace WebScrapperFunctionApp
                     await minio.PutObjectAsync(putObjectArgs);
                 }
 
-                string firstFileUrl = $"https://threedprintingservices.com/{bucketName}/{filename}";
+                string firstFileUrl = $"https://s3storage.threedprintingservices.com/{bucketName}/{filename}";
                 return firstFileUrl;
             }
             catch (Exception ex)
