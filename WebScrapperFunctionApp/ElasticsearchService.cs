@@ -19,7 +19,7 @@ namespace WebScrapperFunctionApp
 
         public ElasticsearchService( string defaultIndex)
         {
-            var settings = new ConnectionSettings(new Uri("https://elastic.houselabs.co.za"))
+            var settings = new ConnectionSettings(new Uri("https://elastic.threedprintingservices.com"))
                 .ApiKeyAuthentication(new ApiKeyAuthenticationCredentials("QmRHMng1QUJiUTY3b25MMFZoNS06U09kR2ZkOWdTUHl2NGxPeEQwaEdYZw=="))
                 .DefaultIndex(defaultIndex)
                 .ServerCertificateValidationCallback((o, certificate, chain, errors) => true)
