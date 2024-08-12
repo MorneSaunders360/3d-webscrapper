@@ -43,7 +43,7 @@ namespace WebScrapperFunctionApp
                                               )
                                           );
 
-
+                int Counter = 0;
                 Console.WriteLine($"Found Printable Detial For Processsing {searchResponseprintable.Documents.Count()}");
                 foreach (var printable in searchResponseprintable.Documents)
                 {
@@ -154,6 +154,8 @@ namespace WebScrapperFunctionApp
                                 }
                                 if (printable.PrintableDetials.Zip_data.Files.Count > 0)
                                 {
+                                    Counter++;
+                                    Console.WriteLine($"Printable Detial Uploaded {Counter}");
                                     await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                                 }
 
