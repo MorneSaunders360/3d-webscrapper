@@ -49,7 +49,7 @@ namespace WebScrapperFunctionApp
                 {
                     try
                     {
-                        if (printable.Type.ToLower() == "printables")
+                        if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0)) 
                         {
                             var client = new HttpClient();
                             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
@@ -99,7 +99,7 @@ namespace WebScrapperFunctionApp
                                         }
                                     }
                                     var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
-                                    if (string.IsNullOrEmpty(downloadPackId))
+                                    if (!string.IsNullOrEmpty(downloadPackId))
                                     {
                                         var clientDownloadPackLink = new HttpClient();
                                         var requestDownloadPackLink = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
@@ -135,9 +135,8 @@ namespace WebScrapperFunctionApp
                                             updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = await BlobSerivce.UploadFile(downloadLink, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(downloadLink)}", "stl") });
                                         }
 
-                                        printable.PrintableDetials.Zip_data.Files = updatedFiles;
                                     }
-
+                                    printable.PrintableDetials.Zip_data.Files = updatedFiles;
                                     var Images = printable.PrintableDetials.Zip_data.Images.ToList();
                                     var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
                                     if (printable.PrintableDetials.Zip_data.Files.Count > 0)
@@ -150,7 +149,7 @@ namespace WebScrapperFunctionApp
                                     }
 
 
-                                    
+
 
                                 }
                                 if (printable.PrintableDetials.Zip_data.Files.Count > 0)
