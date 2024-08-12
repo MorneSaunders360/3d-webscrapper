@@ -46,7 +46,7 @@ namespace WebScrapperFunctionApp
             {
                 try
                 {
-                    string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(doc.Thumbnail)}", "images");
+                    string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{doc.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(doc.Thumbnail)}", "images");
                     if (!string.IsNullOrEmpty(link))
                     {
                         doc.Thumbnail = link;

@@ -14,7 +14,7 @@ namespace WebScrapperFunctionApp
 {
     internal class BlobSerivce
     {
-        public static async Task<List<Dto.File>> UploadZipContent(string zipFileUrl, string bucketName)
+        public static async Task<List<Dto.File>> UploadZipContent(string filename,string zipFileUrl, string bucketName)
         {
             var uploadedFiles = new List<Dto.File>();
 
@@ -37,7 +37,7 @@ namespace WebScrapperFunctionApp
                     if (string.IsNullOrEmpty(entry.Name)) continue; // Skip directories
 
                     // Generate unique filename with GUID
-                    var uniqueFileName = $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(entry.Name)}";
+                    var uniqueFileName = $"{filename}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(entry.Name)}";
 
                     using var entryStream = entry.Open();
                     var memoryStream = new MemoryStream();

@@ -61,7 +61,7 @@ namespace WebScrapperFunctionApp
                             if (response.IsSuccessStatusCode)
                             {
                                 PrintablesDetialApi PrintablesDetialApi = JsonConvert.DeserializeObject<PrintablesDetialApi>(await response.Content.ReadAsStringAsync());
-                                string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
+                                string ThumbnailLink = await BlobSerivce.UploadFile("https://files.printables.com/" + PrintablesDetialApi.Data.Print.Image.FilePath, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(PrintablesDetialApi.Data.Print.Image.FilePath)}", "images");
                                 printable.PrintableDetials = new PrintableDetials()
                                 {
                                     Creator = new Creator { FirstName = PrintablesDetialApi.Data.Print.User.PublicUsername, LastName = PrintablesDetialApi.Data.Print.User.PublicUsername, Name = PrintablesDetialApi.Data.Print.User.Handle },
@@ -111,7 +111,7 @@ namespace WebScrapperFunctionApp
                                     var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
 
                                     var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
-                                    updatedFiles.AddRange(await BlobSerivce.UploadZipContent(downloadLink, "stl"));
+                                    updatedFiles.AddRange(await BlobSerivce.UploadZipContent(printable.Id, downloadLink, "stl"));
                                     printable.PrintableDetials.Zip_data.Files = updatedFiles;
 
                                     var Images = printable.PrintableDetials.Zip_data.Images.ToList();
@@ -119,7 +119,7 @@ namespace WebScrapperFunctionApp
 
                                     foreach (var item in Images)
                                     {
-                                        updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
+                                        updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
                                     }
 
                                     // Update the original collection after iteration
