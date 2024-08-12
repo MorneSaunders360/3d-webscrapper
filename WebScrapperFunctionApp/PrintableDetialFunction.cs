@@ -109,24 +109,29 @@ namespace WebScrapperFunctionApp
 
                                     var jsonDownloadPackLink = JObject.Parse(responseBodyDownloadPackLink);
                                     var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
-
-                                    var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
-                                    updatedFiles.AddRange(await BlobSerivce.UploadZipContent(printable.Id, downloadLink, "stl"));
-                                    printable.PrintableDetials.Zip_data.Files = updatedFiles;
-
-                                    var Images = printable.PrintableDetials.Zip_data.Images.ToList();
-                                    var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
-
-                                    foreach (var item in Images)
+                                    if (!string.IsNullOrEmpty(downloadLink)) 
                                     {
-                                        updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
+                                        var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
+                                        updatedFiles.AddRange(await BlobSerivce.UploadZipContent(printable.Id, downloadLink, "stl"));
+                                        printable.PrintableDetials.Zip_data.Files = updatedFiles;
+
+                                        var Images = printable.PrintableDetials.Zip_data.Images.ToList();
+                                        var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
+
+                                        foreach (var item in Images)
+                                        {
+                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
+                                        }
+
+                                        // Update the original collection after iteration
+                                        printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     }
-
-                                    // Update the original collection after iteration
-                                    printable.PrintableDetials.Zip_data.Images = updatedImages;
-
                                 }
-                                await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
+                                if (printable.PrintableDetials.Zip_data.Files.Count>0)
+                                {
+                                    await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
+                                }
+                                
                             }
 
                         }
