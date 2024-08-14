@@ -65,7 +65,7 @@ namespace WebScrapperFunctionApp
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                SentrySdk.CaptureException(ex);
             }
 
             return uploadedFiles;
@@ -106,6 +106,7 @@ namespace WebScrapperFunctionApp
             }
             catch (Exception ex)
             {
+                SentrySdk.CaptureException(ex);
                 return string.Empty;
             }
         }
