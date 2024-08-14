@@ -143,7 +143,7 @@ namespace WebScrapperFunctionApp
                                     {
                                         foreach (var item in Images)
                                         {
-                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile(item.FilePreviewPath, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.FilePreviewPath)}", "images") });
+                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile("https://files.printables.com/" +item.FilePreviewPath, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.FilePreviewPath)}", "images") });
                                         }
                                         printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     }
