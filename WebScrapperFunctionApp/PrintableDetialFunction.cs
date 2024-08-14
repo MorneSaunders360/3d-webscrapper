@@ -137,16 +137,17 @@ namespace WebScrapperFunctionApp
 
                                     }
                                     printable.PrintableDetials.Zip_data.Files = updatedFiles;
-                                    var Images = printable.PrintableDetials.Zip_data.Images.ToList();
+                                    var Images = PrintablesDetialApi.Data.Print.Stls.ToList();
                                     var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
                                     if (printable.PrintableDetials.Zip_data.Files.Count > 0)
                                     {
                                         foreach (var item in Images)
                                         {
-                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.name, url = await BlobSerivce.UploadFile(item.url, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.url)}", "images") });
+                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = await BlobSerivce.UploadFile(item.FilePreviewPath, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(item.FilePreviewPath)}", "images") });
                                         }
                                         printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     }
+                                    printable.PrintableDetials.Zip_data.Images = updatedImages;
 
 
 
