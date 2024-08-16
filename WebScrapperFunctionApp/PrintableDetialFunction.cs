@@ -119,25 +119,23 @@ namespace WebScrapperFunctionApp
                                     await Task.WhenAll(tasksStl);
                                     await Task.WhenAll(tasksGcodes);
                                     printable.PrintableDetials.Zip_data.Files = updatedFiles;
+                                    if (printable.PrintableDetials.Zip_data.Files.Count == 0)
+                                    {
+                                        break;
+                                    }
                                     var Images = PrintablesDetialApi.Data.Print.Stls.ToList();
                                     var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
-                                    if (printable.PrintableDetials.Zip_data.Files.Count > 0)
+                                    foreach (var item in Images)
                                     {
-                                        foreach (var item in Images)
-                                        {
-                                            updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
-                                        }
-                                        printable.PrintableDetials.Zip_data.Images = updatedImages;
+                                        updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
                                     }
+                                    printable.PrintableDetials.Zip_data.Images = updatedImages;
 
                                 }
-                                if (printable.PrintableDetials.Zip_data.Files.Count > 0)
-                                {
-                                    Counter++;
-                                    Console.WriteLine($"Printable Detial Uploaded {Counter}");
-                                    await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
-                                }
-
+                                
+                                Counter++;
+                                Console.WriteLine($"Printable Detial Uploaded {Counter}");
+                                await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                             }
 
                         }
