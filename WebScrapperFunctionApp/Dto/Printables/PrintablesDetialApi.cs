@@ -43,10 +43,29 @@ namespace WebScrapperFunctionApp.Dto.PrintablesDetial
 
         [JsonProperty("stls")]
         public List<Stl> Stls { get; set; }
+        [JsonProperty("gcodes")]
+        public List<Gcode> Gcodes { get; set; }
+
 
     }
 
+    public class Gcode
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
 
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("fileSize")]
+        public int FileSize { get; set; }
+
+        [JsonProperty("filePreviewPath")]
+        public string FilePreviewPath { get; set; }
+
+        [JsonProperty("__typename")]
+        public string Typename { get; set; }
+    }
     public class PrintablesDetialApi
     {
         [JsonProperty("data")]

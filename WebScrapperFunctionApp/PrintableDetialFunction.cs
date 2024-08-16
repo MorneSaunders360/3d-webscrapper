@@ -134,12 +134,34 @@ namespace WebScrapperFunctionApp
                                             var contentSingleFile = new StringContent(Json, null, "application/json");
                                             requestSingleFile.Content = contentSingleFile;
                                             var responseSingleFile = await client.SendAsync(requestSingleFile);
-                                            responseSingleFile.EnsureSuccessStatusCode();
+                                            if (!response.IsSuccessStatusCode)
+                                            {
+                                                Console.WriteLine(response.Content.ReadAsStringAsync());
+                                                break;
+                                            }
                                             var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
                                             var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
                                             updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = await BlobSerivce.UploadFile(downloadLink, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(downloadLink)}", "stl") });
                                         }
-
+                                        foreach (var item in PrintablesDetialApi.Data.Print.Gcodes)
+                                        {
+                                            var clientSingleFile = new HttpClient();
+                                            var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                            requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
+                                            requestSingleFile.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
+                                            string Json = "{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"{stl}\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", item.Id).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty)).Replace("{stl}", Path.GetExtension(item.Name).Replace(".", string.Empty));
+                                            var contentSingleFile = new StringContent(Json, null, "application/json");
+                                            requestSingleFile.Content = contentSingleFile;
+                                            var responseSingleFile = await client.SendAsync(requestSingleFile);
+                                            if (!response.IsSuccessStatusCode)
+                                            {
+                                                Console.WriteLine(response.Content.ReadAsStringAsync());
+                                                break;
+                                            }
+                                            var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
+                                            var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
+                                            updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = await BlobSerivce.UploadFile(downloadLink, $"{printable.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(downloadLink)}", "stl") });
+                                        }
                                     }
                                     printable.PrintableDetials.Zip_data.Files = updatedFiles;
                                     var Images = PrintablesDetialApi.Data.Print.Stls.ToList();
