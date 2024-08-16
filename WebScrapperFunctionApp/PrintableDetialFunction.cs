@@ -129,10 +129,6 @@ namespace WebScrapperFunctionApp
                                         }
                                         printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     }
-                                    printable.PrintableDetials.Zip_data.Images = updatedImages;
-
-
-
 
                                 }
                                 if (printable.PrintableDetials.Zip_data.Files.Count > 0)
