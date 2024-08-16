@@ -50,7 +50,7 @@ namespace WebScrapperFunctionApp
                     try
                     {
                         Console.WriteLine($"Processsing Printable Detial {printable.Id}");
-                        if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0)) 
+                        if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0))
                         {
                             var client = new HttpClient();
                             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
@@ -95,7 +95,10 @@ namespace WebScrapperFunctionApp
                                         }
                                         var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
                                         var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
-                                        updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        if (!string.IsNullOrEmpty(downloadLink))
+                                        {
+                                            updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        }
                                     }).ToList();
                                     var tasksGcodes = PrintablesDetialApi.Data.Print.Gcodes.Select(async item =>
                                     {
@@ -114,7 +117,10 @@ namespace WebScrapperFunctionApp
                                         }
                                         var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
                                         var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
-                                        updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        if (!string.IsNullOrEmpty(downloadLink))
+                                        {
+                                            updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        }
                                     }).ToList();
                                     await Task.WhenAll(tasksStl);
                                     await Task.WhenAll(tasksGcodes);
@@ -132,7 +138,7 @@ namespace WebScrapperFunctionApp
                                     printable.PrintableDetials.Zip_data.Images = updatedImages;
 
                                 }
-                                
+
                                 Counter++;
                                 Console.WriteLine($"Printable Detial Uploaded {Counter}");
                                 await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
