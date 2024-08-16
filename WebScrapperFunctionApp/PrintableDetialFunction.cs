@@ -83,22 +83,26 @@ namespace WebScrapperFunctionApp
                                     var contentPack = new StringContent("{\"query\":\"query PrintFiles($id: ID!) {\\n  print(id: $id) {\\n\\n    downloadPacks {\\n      id\\n      name\\n      fileSize\\n      fileType\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\",\"variables\":{\"id\":\"{Id}\"}}".Replace("{Id}", printable.Id.Replace("_Printables", string.Empty)), null, "application/json");
                                     requestPack.Content = contentPack;
                                     var responsePack = await client.SendAsync(requestPack);
-                                    responsePack.EnsureSuccessStatusCode();
-                                    var responseContentPack = await responsePack.Content.ReadAsStringAsync();
-
-                                    // Parse the JSON response using JObject
-                                    var json = JObject.Parse(responseContentPack);
-                                    var downloadPacks = json["data"]["print"]["downloadPacks"];
                                     var downloadPackId = "";
-
-                                    foreach (var pack in downloadPacks)
+                                    if (responsePack.IsSuccessStatusCode)
                                     {
-                                        if ((string)pack["fileType"] == "MODEL_FILES")
+                                        var responseContentPack = await responsePack.Content.ReadAsStringAsync();
+
+                                        // Parse the JSON response using JObject
+                                        var json = JObject.Parse(responseContentPack);
+                                        var downloadPacks = json["data"]["print"]["downloadPacks"];
+
+
+                                        foreach (var pack in downloadPacks)
                                         {
-                                            downloadPackId = (string)pack["id"];
-                                            break;
+                                            if ((string)pack["fileType"] == "MODEL_FILES")
+                                            {
+                                                downloadPackId = (string)pack["id"];
+                                                break;
+                                            }
                                         }
                                     }
+                                    
                                     var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
                                     if (!string.IsNullOrEmpty(downloadPackId))
                                     {
