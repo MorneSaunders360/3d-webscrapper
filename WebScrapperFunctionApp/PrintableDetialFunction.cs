@@ -77,32 +77,36 @@ namespace WebScrapperFunctionApp
                                 printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
                                 if (printable.Type.ToLower() == "printables")
                                 {
-                                    var clientPack = new HttpClient();
-                                    var requestPack = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
-                                    requestPack.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
-                                    var contentPack = new StringContent("{\"query\":\"query PrintFiles($id: ID!) {\\n  print(id: $id) {\\n\\n    downloadPacks {\\n      id\\n      name\\n      fileSize\\n      fileType\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\",\"variables\":{\"id\":\"{Id}\"}}".Replace("{Id}", printable.Id.Replace("_Printables", string.Empty)), null, "application/json");
-                                    requestPack.Content = contentPack;
-                                    var responsePack = await client.SendAsync(requestPack);
                                     var downloadPackId = "";
-                                    if (responsePack.IsSuccessStatusCode)
+                                    if ((PrintablesDetialApi.Data.Print.Stls.Count + PrintablesDetialApi.Data.Print.Gcodes.Count) < 10)
                                     {
-                                        var responseContentPack = await responsePack.Content.ReadAsStringAsync();
+                                        var clientPack = new HttpClient();
+                                        var requestPack = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                        requestPack.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
+                                        var contentPack = new StringContent("{\"query\":\"query PrintFiles($id: ID!) {\\n  print(id: $id) {\\n\\n    downloadPacks {\\n      id\\n      name\\n      fileSize\\n      fileType\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\",\"variables\":{\"id\":\"{Id}\"}}".Replace("{Id}", printable.Id.Replace("_Printables", string.Empty)), null, "application/json");
+                                        requestPack.Content = contentPack;
+                                        var responsePack = await client.SendAsync(requestPack);
 
-                                        // Parse the JSON response using JObject
-                                        var json = JObject.Parse(responseContentPack);
-                                        var downloadPacks = json["data"]["print"]["downloadPacks"];
-
-
-                                        foreach (var pack in downloadPacks)
+                                        if (responsePack.IsSuccessStatusCode)
                                         {
-                                            if ((string)pack["fileType"] == "MODEL_FILES")
+                                            var responseContentPack = await responsePack.Content.ReadAsStringAsync();
+
+                                            // Parse the JSON response using JObject
+                                            var json = JObject.Parse(responseContentPack);
+                                            var downloadPacks = json["data"]["print"]["downloadPacks"];
+
+
+                                            foreach (var pack in downloadPacks)
                                             {
-                                                downloadPackId = (string)pack["id"];
-                                                break;
+                                                if ((string)pack["fileType"] == "MODEL_FILES")
+                                                {
+                                                    downloadPackId = (string)pack["id"];
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                    
+
                                     var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
                                     if (!string.IsNullOrEmpty(downloadPackId))
                                     {
