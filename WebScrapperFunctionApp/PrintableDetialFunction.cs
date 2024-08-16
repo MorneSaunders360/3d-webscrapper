@@ -167,6 +167,7 @@ namespace WebScrapperFunctionApp
                     }
                     catch (Exception ex)
                     {
+                        Console.WriteLine($"Printable Detial Exception {ex}");
                         SentrySdk.CaptureException(ex);
                     }
                 }
