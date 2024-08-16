@@ -21,7 +21,7 @@ namespace WebScrapperFunctionApp
         }
 
         [Function("PrintableImageFunctionHttp")]
-        public async Task<IActionResult> PrintableImageFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
+        public async Task<IActionResult> PrintableImageFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             int Size = int.Parse(req.Query["Size"]);
             Console.WriteLine(await GetExternalIpAddress());

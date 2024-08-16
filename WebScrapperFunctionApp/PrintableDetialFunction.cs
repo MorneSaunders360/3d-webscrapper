@@ -23,7 +23,7 @@ namespace WebScrapperFunctionApp
 
 
         [Function("PrintableDetialFunctionHttp")]
-        public async Task<IActionResult> PrintableDetialFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
+        public async Task<IActionResult> PrintableDetialFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
 
             try
