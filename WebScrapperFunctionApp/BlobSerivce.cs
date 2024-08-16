@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Minio.Exceptions;
 using System.IO.Compression;
 using WebScrapperFunctionApp.Dto;
+using static Grpc.Core.Metadata;
 
 namespace WebScrapperFunctionApp
 {
@@ -34,6 +35,7 @@ namespace WebScrapperFunctionApp
 
                 foreach (var entry in archive.Entries)
                 {
+                  
                     if (string.IsNullOrEmpty(entry.Name)) continue; // Skip directories
 
                     // Generate unique filename with GUID
@@ -54,7 +56,7 @@ namespace WebScrapperFunctionApp
                     await minio.PutObjectAsync(putObjectArgs);
 
                     string fileUrl = $"https://s3storage.threedprintingservices.com/{bucketName}/{uniqueFileName}";
-
+                    Console.WriteLine(fileUrl);
                     // Create and add File object to the list
                     uploadedFiles.Add(new Dto.File
                     {
@@ -87,6 +89,7 @@ namespace WebScrapperFunctionApp
                     memoryStream.Write(data, 0, data.Length);
                     memoryStream.Position = 0;
                 }
+               
                 using (var stream = memoryStream)
                 {
                     stream.Seek(0, SeekOrigin.Begin);
@@ -102,6 +105,7 @@ namespace WebScrapperFunctionApp
                 }
 
                 string firstFileUrl = $"https://s3storage.threedprintingservices.com/{bucketName}/{filename}";
+                Console.WriteLine(firstFileUrl);
                 return firstFileUrl;
             }
             catch (Exception ex)
