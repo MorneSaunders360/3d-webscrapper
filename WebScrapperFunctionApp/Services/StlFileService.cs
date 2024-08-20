@@ -28,8 +28,6 @@ namespace WebScrapperFunctionApp.Services
         public static async Task<List<DimensionsAndVolumeResponse>> ProcessSTLFiles(List<string> stlUrls)
         {
             var tasks = new List<Task<DimensionsAndVolumeResponse>>();
-            var UserProxy = await ProxyTesterService.GetActiveProxyAsync();
-
             foreach (var url in stlUrls)
             {
                 tasks.Add(Task.Run(async () =>
