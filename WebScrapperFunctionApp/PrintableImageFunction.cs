@@ -7,6 +7,7 @@ using WebScrapperFunctionApp.Dto;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace WebScrapperFunctionApp
 {
@@ -21,28 +22,31 @@ namespace WebScrapperFunctionApp
         }
 
         [Function("PrintableImageFunctionHttp")]
-        public async Task<IActionResult> PrintableImageFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        public async Task<IActionResult> PrintableImageFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
+            HttpRequest req)
         {
-            int Size = int.Parse(req.Query["Size"]);
-            Console.WriteLine(await GetExternalIpAddress());
-            var elasticsearchService = new ElasticsearchService<Printable>("printables");
-            var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                          .Size(Size)
-                                          .Query(q => q
-                                              .Bool(b => b
-                                                  .Must(m => m
-                                                      .Wildcard(w => w
-                                                          .Field(f => f.Thumbnail)
-                                                          .Value("*files.printables.com*")
-                                                      )
-                                                  )
-                                              )
-                                          )
-                                      );
 
+            string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
+            Printable AppConfigReponse = new();
+            JObject payload = JObject.Parse(reqContent);
+            List<Printable> dtRequest;
+            try
+            {
+                dtRequest = JsonConvert.DeserializeObject<List<Printable>>(JsonConvert.SerializeObject(payload));
+
+                if (dtRequest is null)
+                {
+                    return new BadRequestObjectResult(dtRequest);
+                }
+            }
+            catch (Exception)
+            {
+                return new BadRequestObjectResult(AppConfigReponse);
+            }
+            var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
-            Console.WriteLine($"Found Printable Image For Processsing {searchResponseprintable.Documents.Count()}");
-            var tasks = searchResponseprintable.Documents.Select(async doc =>
+            Console.WriteLine($"Found Printable Image For Processsing {dtRequest.Count()}");
+            var tasks = dtRequest.Select(async doc =>
             {
                 try
                 {

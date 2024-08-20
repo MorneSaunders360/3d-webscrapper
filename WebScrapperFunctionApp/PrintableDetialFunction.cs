@@ -23,29 +23,34 @@ namespace WebScrapperFunctionApp
 
 
         [Function("PrintableDetialFunctionHttp")]
-        public async Task<IActionResult> PrintableDetialFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        public async Task<IActionResult> PrintableDetialFunctionHttp(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
+            HttpRequest req)
         {
+            string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
+            Printable AppConfigReponse = new();
+            JObject payload = JObject.Parse(reqContent);
+            List<Printable> dtRequest;
+            try
+            {
+                dtRequest = JsonConvert.DeserializeObject<List<Printable>>(JsonConvert.SerializeObject(payload));
+
+                if (dtRequest is null)
+                {
+                    return new BadRequestObjectResult(dtRequest);
+                }
+            }
+            catch (Exception)
+            {
+                return new BadRequestObjectResult(AppConfigReponse);
+            }
 
             try
             {
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
-                int Size = int.Parse(req.Query["Size"]);
-                var searchResponseprintable = elasticsearchService.SearchDocuments(s => s
-                                              .Size(Size)
-                                              .Query(q => q
-                                                  .Bool(b => b
-                                                      .MustNot(mn => mn
-                                                          .Exists(e => e
-                                                              .Field(f => f.PrintableDetials)
-                                                          )
-                                                      )
-                                                  )
-                                              )
-                                          );
-
                 int Counter = 0;
-                Console.WriteLine($"Found Printable Detial For Processsing {searchResponseprintable.Documents.Count()}");
-                foreach (var printable in searchResponseprintable.Documents)
+                Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
+                foreach (var printable in dtRequest)
                 {
                     try
                     {

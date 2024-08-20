@@ -7,6 +7,7 @@ using WebScrapperFunctionApp.Dto;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace WebScrapperFunctionApp
 {
@@ -21,31 +22,35 @@ namespace WebScrapperFunctionApp
         }
 
         [Function("PrintableDetialImageAndFilesFunctionHttp")]
-        public async Task<IActionResult> PrintableDetialImageAndFilesFunctionHttp([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        public async Task<IActionResult> PrintableDetialImageAndFilesFunctionHttp(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
+            HttpRequest req)
         {
-            int Size = int.Parse(req.Query["Size"]);
-            Console.WriteLine(await GetExternalIpAddress());
+            string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
+            Printable AppConfigReponse = new();
+            JObject payload = JObject.Parse(reqContent);
+            List<Printable> dtRequest;
+            try
+            {
+                dtRequest = JsonConvert.DeserializeObject<List<Printable>>(JsonConvert.SerializeObject(payload));
+
+                if (dtRequest is null)
+                {
+                    return new BadRequestObjectResult(dtRequest);
+                }
+            }
+            catch (Exception)
+            {
+                return new BadRequestObjectResult(AppConfigReponse);
+            }
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
-
-            var searchResponsePrintable = elasticsearchService.SearchDocuments(s => s
-                .Size(Size)
-                .From(0)
-                .Query(q => q
-                    .QueryString(qs => qs
-                        .Query("*files.printables.com*")
-                    )
-                )
-                .Sort(sort => sort
-                )
-            );
-
             int Counter = 0;
-            Console.WriteLine($"Found Printable Detial files For Processsing {searchResponsePrintable.Documents.Count()}");
-            var tasks = searchResponsePrintable.Documents.Select(async doc =>
+            Console.WriteLine($"Found Printable Detial files For Processsing {dtRequest.Count()}");
+            var tasks = dtRequest.Select(async doc =>
             {
                 try
                 {
-                    if (doc.PrintableDetials!=null)
+                    if (doc.PrintableDetials != null)
                     {
                         var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
                         var updatedImages = new List<WebScrapperFunctionApp.Dto.Image>();
@@ -67,7 +72,7 @@ namespace WebScrapperFunctionApp
                                 updatedImages.Add(image);
                             }
                         }
-                        if (updatedFiles.Count>0&& updatedImages.Count > 0)
+                        if (updatedFiles.Count > 0 && updatedImages.Count > 0)
                         {
                             Counter++;
                             doc.PrintableDetials.Zip_data.Files = updatedFiles;
@@ -75,9 +80,9 @@ namespace WebScrapperFunctionApp
                             Console.WriteLine($"Printable Detial File & Images Uploaded {Counter}");
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
                         }
-                      
+
                     }
-                  
+
                 }
                 catch (Exception ex)
                 {
