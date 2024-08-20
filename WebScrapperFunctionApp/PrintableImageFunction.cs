@@ -28,11 +28,10 @@ namespace WebScrapperFunctionApp
 
             string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
             Printable AppConfigReponse = new();
-            JObject payload = JObject.Parse(reqContent);
             List<Printable> dtRequest;
             try
             {
-                dtRequest = JsonConvert.DeserializeObject<List<Printable>>(JsonConvert.SerializeObject(payload));
+                dtRequest = JsonConvert.DeserializeObject<List<Printable>>(reqContent);
 
                 if (dtRequest is null)
                 {
