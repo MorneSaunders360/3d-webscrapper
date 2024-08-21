@@ -19,6 +19,7 @@ namespace WebScrapperFunctionApp.Dto
         public string Name { get; set; }
         public double Volume { get; set; }
         public string Thumbnail { get; set; }
+        public double Cost { get; set; }
         public string Url { get; set; }
         public string Public_url { get; set; }
         public Creator Creator { get; set; }
