@@ -70,7 +70,7 @@ namespace WebScrapperFunctionApp
                 {
                     try
                     {
-                        Console.WriteLine($"Processsing Printable Detial {printable.Id}");
+                        
                         if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0))
                         {
                             var client = new HttpClient();
