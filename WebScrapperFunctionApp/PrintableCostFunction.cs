@@ -19,7 +19,7 @@ namespace WebScrapperFunctionApp
 {
     public class PrintableCostFunction
     {
-        public static async Task<IPAddress?> GetExternalIpAddress() 
+        public static async Task<IPAddress?> GetExternalIpAddress()
         {
             var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
                 .Replace("\\r\\n", "").Replace("\\n", "").Trim();
