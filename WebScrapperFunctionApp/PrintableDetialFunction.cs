@@ -161,7 +161,7 @@ namespace WebScrapperFunctionApp
                                         updatedImages.Add(new WebScrapperFunctionApp.Dto.Image { name = item.Name, url = "https://files.printables.com/" + item.FilePreviewPath });
                                     }
                                     printable.PrintableDetials.Zip_data.Images = updatedImages;
-
+                                    printable.CreatedDate = DateTime.Now;
                                     Counter++;
                                     Console.WriteLine($"Printable Detial Uploaded {Counter}");
                                     await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);

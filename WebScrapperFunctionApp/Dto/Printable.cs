@@ -13,6 +13,7 @@ namespace WebScrapperFunctionApp.Dto
         public string Name { get; set; }
         public string Thumbnail { get; set; }
         public PrintableDetials PrintableDetials { get; set; }
+        public DateTime? CreatedDate { get; set; }
     }
     internal class PrintableDetials
     {
