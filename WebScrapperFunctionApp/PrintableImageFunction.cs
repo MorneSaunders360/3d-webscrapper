@@ -57,7 +57,7 @@ namespace WebScrapperFunctionApp
                         dtResponse.Add(doc);
                         
                         Counter++;
-                        Console.WriteLine($"Printable Image Uploaded {Counter}");
+                        Console.WriteLine($"Printable Image Uploaded {Counter}_{doc.Id}");
                     }
                 }
                 catch (Exception ex)

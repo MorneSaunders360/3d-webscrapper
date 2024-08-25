@@ -61,7 +61,7 @@ namespace WebScrapperFunctionApp
                             doc.PrintableDetials.Volume = VolumeSum;
                             dtResponse.Add(doc);
                             Counter++;
-                            Console.WriteLine($"Printable Volume Updated {Counter}");
+                            Console.WriteLine($"Printable Volume Updated {Counter}_{doc.Id}");
                         }
 
                     }

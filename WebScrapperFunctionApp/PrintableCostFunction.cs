@@ -79,7 +79,7 @@ namespace WebScrapperFunctionApp
                         doc.PrintableDetials.Cost = totalCosts;
                         dtResponse.Add(doc);
                         Counter++;
-                        Console.WriteLine($"Printable Cost Updated {Counter}");
+                        Console.WriteLine($"Printable Cost Updated {Counter}_{doc.Id}");
 
                     }
                 }

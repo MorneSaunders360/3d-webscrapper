@@ -77,7 +77,7 @@ namespace WebScrapperFunctionApp
                             Counter++;
                             doc.PrintableDetials.Zip_data.Files = updatedFiles;
                             doc.PrintableDetials.Zip_data.Images = updatedImages;
-                            Console.WriteLine($"Printable Detial File & Images Uploaded {Counter}");
+                            Console.WriteLine($"Printable Detial File & Images Uploaded {Counter}_{doc.Id}");
                             dtResponse.Add(doc);
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
                         }
