@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebScrapperFunctionApp.Dto;
 using WebScrapperFunctionApp.Dto.PrintablesDetial;
+using WebScrapperFunctionApp.Services;
 using static System.Net.WebRequestMethods;
 
 namespace WebScrapperFunctionApp
@@ -66,6 +67,12 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 int Counter = 0;
                 Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
+               //var useProxy = await ProxyTesterService.GetActiveProxyAsync();
+               // var httpClientHandler = new HttpClientHandler()
+               // {
+               //     Proxy = new WebProxy(useProxy.Url),
+               //     UseProxy = false
+               // };
                 var tasks = dtRequest.Select(async printable =>
                 {
                     try
@@ -163,7 +170,7 @@ namespace WebScrapperFunctionApp
                                     printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     printable.CreatedDate = DateTime.Now;
                                     Counter++;
-                                    Console.WriteLine($"Printable Detial Uploaded {Counter}");
+                                    Console.WriteLine($"Printable Detial Uploaded {Counter} {printable.Id}");
                                     await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                                 }
                               
