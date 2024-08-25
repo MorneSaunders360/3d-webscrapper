@@ -169,9 +169,9 @@ namespace WebScrapperFunctionApp
                                     }
                                     printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     printable.CreatedDate = DateTime.Now;
+                                    await elasticsearchService.UpsertDocument(printable, printable.Id);
                                     Counter++;
                                     Console.WriteLine($"Printable Detial Uploaded {Counter} {printable.Id}");
-                                    await elasticsearchService.UpsertDocument(printable, printable.Id).ConfigureAwait(false);
                                 }
                               
                             }
