@@ -78,7 +78,7 @@ namespace WebScrapperFunctionApp
             var httpClientHandler = new HttpClientHandler()
             {
                 Proxy = new WebProxy(useProxy.Url),
-                UseProxy = true
+                UseProxy = false
             };
             Console.WriteLine($"Using Proxy {useProxy.Url}");
             var tasks = dtRequest.Select(async printable =>
