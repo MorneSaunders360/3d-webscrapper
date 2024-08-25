@@ -72,21 +72,23 @@ namespace WebScrapperFunctionApp
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
-            //var useProxy = await ProxyTesterService.GetActiveProxyAsync();
-            // var httpClientHandler = new HttpClientHandler()
-            // {
-            //     Proxy = new WebProxy(useProxy.Url),
-            //     UseProxy = false
-            // };
+
             List<Printable> dtResponse = new List<Printable>();
+            var useProxy = await ProxyTesterService.GetActiveProxyAsync();
+            var httpClientHandler = new HttpClientHandler()
+            {
+                Proxy = new WebProxy(useProxy.Url),
+                UseProxy = true
+            };
             var tasks = dtRequest.Select(async printable =>
             {
                 try
                 {
 
+
                     if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0))
                     {
-                        var client = new HttpClient();
+                        var client = new HttpClient(httpClientHandler);
 
                         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
                         string randomUserAgent = userAgents[randomIndex];
@@ -114,54 +116,63 @@ namespace WebScrapperFunctionApp
                                 };
                                 printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
                                 var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
-                                var tasksStl = PrintablesDetialApi.Data.Print.Stls.Select(async item =>
+                                if (PrintablesDetialApi.Data.Print.Stls.Count < 10)
                                 {
-                                    var clientSingleFile = new HttpClient();
-                                    var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
-                                    string randomUserAgent = userAgents[randomIndex];
-                                    requestSingleFile.Headers.Add("User-Agent", randomUserAgent);
-                                    requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
-                                    string Json = "{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"stl\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", item.Id).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty));
-                                    var contentSingleFile = new StringContent(Json, null, "application/json");
-                                    requestSingleFile.Content = contentSingleFile;
-                                    var responseSingleFile = await client.SendAsync(requestSingleFile);
-                                    if (!response.IsSuccessStatusCode)
+                                    var tasksStl = PrintablesDetialApi.Data.Print.Stls.Select(async item =>
                                     {
-                                        Console.WriteLine(response.Content.ReadAsStringAsync());
-                                        return;
-                                    }
-                                    var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
-                                    var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
-                                    if (!string.IsNullOrEmpty(downloadLink))
-                                    {
-                                        updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
-                                    }
-                                }).ToList();
-                                var tasksGcodes = PrintablesDetialApi.Data.Print.Gcodes.Select(async item =>
+                                        var clientSingleFile = new HttpClient(httpClientHandler);
+                                        var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                        string randomUserAgent = userAgents[randomIndex];
+                                        requestSingleFile.Headers.Add("User-Agent", randomUserAgent);
+                                        requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
+                                        string Json = "{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"stl\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", item.Id).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty));
+                                        var contentSingleFile = new StringContent(Json, null, "application/json");
+                                        requestSingleFile.Content = contentSingleFile;
+                                        var responseSingleFile = await client.SendAsync(requestSingleFile);
+                                        if (!response.IsSuccessStatusCode)
+                                        {
+                                            Console.WriteLine(response.Content.ReadAsStringAsync());
+                                            return;
+                                        }
+                                        var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
+                                        var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
+                                        if (!string.IsNullOrEmpty(downloadLink))
+                                        {
+                                            updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        }
+                                    }).ToList();
+                                    await Task.WhenAll(tasksStl);
+                                }
+                                if (PrintablesDetialApi.Data.Print.Gcodes.Count < 10)
                                 {
-                                    var clientSingleFile = new HttpClient();
-                                    var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
-                                    requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
-                                    string randomUserAgent = userAgents[randomIndex];
-                                    requestSingleFile.Headers.Add("User-Agent", randomUserAgent);
-                                    string Json = "{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"{stl}\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", item.Id).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty)).Replace("{stl}", Path.GetExtension(item.Name).Replace(".", string.Empty).ToLower());
-                                    var contentSingleFile = new StringContent(Json, null, "application/json");
-                                    requestSingleFile.Content = contentSingleFile;
-                                    var responseSingleFile = await client.SendAsync(requestSingleFile);
-                                    if (!response.IsSuccessStatusCode)
+                                    var tasksGcodes = PrintablesDetialApi.Data.Print.Gcodes.Select(async item =>
                                     {
-                                        Console.WriteLine(response.Content.ReadAsStringAsync());
-                                        return;
-                                    }
-                                    var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
-                                    var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
-                                    if (!string.IsNullOrEmpty(downloadLink))
-                                    {
-                                        updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
-                                    }
-                                }).ToList();
-                                await Task.WhenAll(tasksStl);
-                                await Task.WhenAll(tasksGcodes);
+                                        var clientSingleFile = new HttpClient(httpClientHandler);
+                                        var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
+                                        requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
+                                        string randomUserAgent = userAgents[randomIndex];
+                                        requestSingleFile.Headers.Add("User-Agent", randomUserAgent);
+                                        string Json = "{\"query\":\"mutation GetDownloadLink($id: ID!, $printId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {\\n  getDownloadLink(\\n    id: $id\\n    printId: $printId\\n    fileType: $fileType\\n    source: $source\\n  ) {\\n    ok\\n    errors {\\n      field\\n      messages\\n      __typename\\n    }\\n    output {\\n      link\\n      count\\n      ttl\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"id\":\"{fileId}\",\"fileType\":\"{stl}\",\"printId\":\"{printId}\",\"source\":\"model_detail\"}}".Replace("{fileId}", item.Id).Replace("{printId}", printable.Id.Replace("_Printables", string.Empty)).Replace("{stl}", Path.GetExtension(item.Name).Replace(".", string.Empty).ToLower());
+                                        var contentSingleFile = new StringContent(Json, null, "application/json");
+                                        requestSingleFile.Content = contentSingleFile;
+                                        var responseSingleFile = await client.SendAsync(requestSingleFile);
+                                        if (!response.IsSuccessStatusCode)
+                                        {
+                                            Console.WriteLine(response.Content.ReadAsStringAsync());
+                                            return;
+                                        }
+                                        var jsonDownloadPackLink = JObject.Parse(await responseSingleFile.Content.ReadAsStringAsync());
+                                        var downloadLink = jsonDownloadPackLink["data"]?["getDownloadLink"]?["output"]?["link"]?.ToString();
+                                        if (!string.IsNullOrEmpty(downloadLink))
+                                        {
+                                            updatedFiles.Add(new WebScrapperFunctionApp.Dto.File { name = item.Name, url = downloadLink });
+                                        }
+                                    }).ToList();
+                                    await Task.WhenAll(tasksGcodes);
+                                }
+                                
+                                
+                              
                                 printable.PrintableDetials.Zip_data.Files = updatedFiles;
                                 if (printable.PrintableDetials.Zip_data.Files.Count == 0)
                                 {
@@ -177,6 +188,7 @@ namespace WebScrapperFunctionApp
                                 printable.CreatedDate = DateTime.Now;
                                 dtResponse.Add(printable);
                                 Counter++;
+                                Console.WriteLine(useProxy.Url);
                                 Console.WriteLine($"Printable Detial Uploaded {Counter} {printable.Id}");
                             }
 
@@ -186,7 +198,7 @@ namespace WebScrapperFunctionApp
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Printable Detial Exception {ex}");
+                    //Console.WriteLine($"Printable Detial Exception {ex}");
                     SentrySdk.CaptureException(ex);
                 }
             });
