@@ -22,7 +22,13 @@ namespace WebScrapperFunctionApp
 
     public class PrintableDetialFunction
     {
-
+        public static async Task<IPAddress?> GetExternalIpAddress()
+        {
+            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
+                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+            if (!IPAddress.TryParse(externalIpString, out var ipAddress)) return null;
+            return ipAddress;
+        }
 
         [Function("PrintableDetialFunctionHttp")]
         public async Task<IActionResult> PrintableDetialFunctionHttp(
@@ -32,6 +38,7 @@ namespace WebScrapperFunctionApp
             string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
             Printable AppConfigReponse = new();
             List<Printable> dtRequest;
+            Console.WriteLine(GetExternalIpAddress());
             try
             {
                 dtRequest = JsonConvert.DeserializeObject<List<Printable>>(reqContent);
