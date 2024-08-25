@@ -80,6 +80,7 @@ namespace WebScrapperFunctionApp
                 Proxy = new WebProxy(useProxy.Url),
                 UseProxy = true
             };
+            Console.WriteLine($"Using Proxy {useProxy.Url}");
             var tasks = dtRequest.Select(async printable =>
             {
                 try
@@ -188,7 +189,6 @@ namespace WebScrapperFunctionApp
                                 printable.CreatedDate = DateTime.Now;
                                 dtResponse.Add(printable);
                                 Counter++;
-                                Console.WriteLine(useProxy.Url);
                                 Console.WriteLine($"Printable Detial Uploaded {Counter} {printable.Id}");
                             }
 
