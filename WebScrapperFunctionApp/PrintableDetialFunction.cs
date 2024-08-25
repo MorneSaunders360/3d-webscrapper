@@ -38,7 +38,7 @@ namespace WebScrapperFunctionApp
             string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
             Printable AppConfigReponse = new();
             List<Printable> dtRequest;
-            Console.WriteLine(GetExternalIpAddress());
+            Console.WriteLine(await GetExternalIpAddress());
             try
             {
                 dtRequest = JsonConvert.DeserializeObject<List<Printable>>(reqContent);
