@@ -53,6 +53,7 @@ namespace WebScrapperFunctionApp
 
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
+            List<Printable> dtResponse = new List<Printable>();
             Console.WriteLine($"Found Printable Cost For Processsing {dtRequest.Count()}");
             var tasks = dtRequest.Select(async doc =>
             {
@@ -76,7 +77,7 @@ namespace WebScrapperFunctionApp
                     if (totalCosts != 0)
                     {
                         doc.PrintableDetials.Cost = totalCosts;
-                        await elasticsearchService.UpsertDocument(doc, doc.Id);
+                        dtResponse.Add(doc);
                         Counter++;
                         Console.WriteLine($"Printable Cost Updated {Counter}");
 
@@ -89,6 +90,8 @@ namespace WebScrapperFunctionApp
             });
 
             await Task.WhenAll(tasks);
+            Func<Printable, string> idSelector = doc => doc.Id.ToString();
+            await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableCostFunctionHttp Finished {DateTime.Now}");
         }
     }

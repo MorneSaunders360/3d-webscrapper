@@ -47,6 +47,7 @@ namespace WebScrapperFunctionApp
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Volume For Processsing {dtRequest.Count()}");
+            List<Printable> dtResponse = new List<Printable>();
             var tasks = dtRequest.Select(async doc =>
             {
                 try
@@ -58,7 +59,7 @@ namespace WebScrapperFunctionApp
                         if (VolumeSum != 0)
                         {
                             doc.PrintableDetials.Volume = VolumeSum;
-                            await elasticsearchService.UpsertDocument(doc, doc.Id);
+                            dtResponse.Add(doc);
                             Counter++;
                             Console.WriteLine($"Printable Volume Updated {Counter}");
                         }
@@ -72,6 +73,8 @@ namespace WebScrapperFunctionApp
             });
 
             await Task.WhenAll(tasks);
+            Func<Printable, string> idSelector = doc => doc.Id.ToString();
+            await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableVolumeFunctionFunctionHttp Finished {DateTime.Now}");
         }
     }

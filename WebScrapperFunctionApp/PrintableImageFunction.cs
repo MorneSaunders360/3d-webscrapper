@@ -45,6 +45,7 @@ namespace WebScrapperFunctionApp
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Image For Processsing {dtRequest.Count()}");
+            List<Printable> dtResponse = new List<Printable>();
             var tasks = dtRequest.Select(async doc =>
             {
                 try
@@ -53,7 +54,8 @@ namespace WebScrapperFunctionApp
                     if (!string.IsNullOrEmpty(link))
                     {
                         doc.Thumbnail = link;
-                        await elasticsearchService.UpsertDocument(doc, doc.Id);
+                        dtResponse.Add(doc);
+                        
                         Counter++;
                         Console.WriteLine($"Printable Image Uploaded {Counter}");
                     }
@@ -65,6 +67,8 @@ namespace WebScrapperFunctionApp
             });
 
             await Task.WhenAll(tasks);
+            Func<Printable, string> idSelector = doc => doc.Id.ToString();
+            await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetailFunction Finished {DateTime.Now}");
         }
     }

@@ -42,6 +42,7 @@ namespace WebScrapperFunctionApp
             {
                 return new BadRequestObjectResult(AppConfigReponse);
             }
+            List<Printable> dtResponse = new List<Printable>();
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Detial files For Processsing {dtRequest.Count()}");
@@ -77,6 +78,7 @@ namespace WebScrapperFunctionApp
                             doc.PrintableDetials.Zip_data.Files = updatedFiles;
                             doc.PrintableDetials.Zip_data.Images = updatedImages;
                             Console.WriteLine($"Printable Detial File & Images Uploaded {Counter}");
+                            dtResponse.Add(doc);
                             await elasticsearchService.UpsertDocument(doc, doc.Id);
                         }
 
@@ -90,6 +92,8 @@ namespace WebScrapperFunctionApp
             });
 
             await Task.WhenAll(tasks);
+            Func<Printable, string> idSelector = doc => doc.Id.ToString();
+            await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetialImageAndFilesFunctionHttp Finished {DateTime.Now}");
         }
     }
