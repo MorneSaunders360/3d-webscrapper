@@ -67,12 +67,13 @@ namespace WebScrapperFunctionApp
                 var elasticsearchService = new ElasticsearchService<Printable>("printables");
                 int Counter = 0;
                 Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
-               //var useProxy = await ProxyTesterService.GetActiveProxyAsync();
-               // var httpClientHandler = new HttpClientHandler()
-               // {
-               //     Proxy = new WebProxy(useProxy.Url),
-               //     UseProxy = false
-               // };
+                //var useProxy = await ProxyTesterService.GetActiveProxyAsync();
+                // var httpClientHandler = new HttpClientHandler()
+                // {
+                //     Proxy = new WebProxy(useProxy.Url),
+                //     UseProxy = false
+                // };
+                List<Printable> dtResponse = new List<Printable>(); ;  
                 var tasks = dtRequest.Select(async printable =>
                 {
                     try
@@ -169,7 +170,7 @@ namespace WebScrapperFunctionApp
                                     }
                                     printable.PrintableDetials.Zip_data.Images = updatedImages;
                                     printable.CreatedDate = DateTime.Now;
-                                    await elasticsearchService.UpsertDocument(printable, printable.Id);
+                                    dtResponse.Add(printable);
                                     Counter++;
                                     Console.WriteLine($"Printable Detial Uploaded {Counter} {printable.Id}");
                                 }
@@ -184,10 +185,10 @@ namespace WebScrapperFunctionApp
                         SentrySdk.CaptureException(ex);
                     }
                 });
-
+        
                 await Task.WhenAll(tasks);
-         
-
+                Func<Printable, string> idSelector = doc => doc.Id.ToString();
+                await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
 
 
             }
