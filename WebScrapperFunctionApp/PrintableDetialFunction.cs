@@ -117,7 +117,7 @@ namespace WebScrapperFunctionApp
                                 };
                                 printable.PrintableDetials.Zip_data = new ZipData() { Files = new List<WebScrapperFunctionApp.Dto.File>(), Images = new List<WebScrapperFunctionApp.Dto.Image>() };
                                 var updatedFiles = new List<WebScrapperFunctionApp.Dto.File>();
-                                if (PrintablesDetialApi.Data.Print.Stls.Count < 10)
+                                if (PrintablesDetialApi.Data.Print.Stls.Count < 15)
                                 {
                                     var tasksStl = PrintablesDetialApi.Data.Print.Stls.Select(async item =>
                                     {
@@ -144,7 +144,7 @@ namespace WebScrapperFunctionApp
                                     }).ToList();
                                     await Task.WhenAll(tasksStl);
                                 }
-                                if (PrintablesDetialApi.Data.Print.Gcodes.Count < 10)
+                                if (PrintablesDetialApi.Data.Print.Gcodes.Count < 15)
                                 {
                                     var tasksGcodes = PrintablesDetialApi.Data.Print.Gcodes.Select(async item =>
                                     {
