@@ -59,6 +59,24 @@ namespace WebScrapperFunctionApp
                         if (VolumeSum != 0)
                         {
                             doc.PrintableDetials.Volume = VolumeSum;
+                            if (doc.PrintableDetials.Zip_data.Files.Count > 1)
+                            {
+                                foreach (var item in doc.PrintableDetials.Zip_data.Files)
+                                {
+                                    var finditem = dimensionsAndVolumeResponses.FirstOrDefault(x => x.Url == item.url);
+                                    if (finditem != null)
+                                    {
+                                        item.volume = finditem.Volume;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in doc.PrintableDetials.Zip_data.Files)
+                                {
+                                    item.volume = VolumeSum;
+                                }
+                            }
                             dtResponse.Add(doc);
                             Counter++;
                             Console.WriteLine($"Printable Volume Updated {Counter}_{doc.Id}");
