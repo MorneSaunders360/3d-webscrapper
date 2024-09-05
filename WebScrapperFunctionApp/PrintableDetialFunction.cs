@@ -74,7 +74,7 @@ namespace WebScrapperFunctionApp
             Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
 
             List<Printable> dtResponse = new List<Printable>();
-            var useProxy = await ProxyTesterService.GetActiveProxyAsync();
+            var useProxy = await ProxyTesterService.GetActiveProxyAsync(false);
             var httpClientHandler = new HttpClientHandler()
             {
                 Proxy = new WebProxy(useProxy.Url),
@@ -171,9 +171,9 @@ namespace WebScrapperFunctionApp
                                     }).ToList();
                                     await Task.WhenAll(tasksGcodes);
                                 }
-                                
-                                
-                              
+
+
+
                                 printable.PrintableDetials.Zip_data.Files = updatedFiles;
                                 if (printable.PrintableDetials.Zip_data.Files.Count == 0)
                                 {

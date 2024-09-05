@@ -26,28 +26,36 @@ namespace WebScrapperFunctionApp.Services
 
             return searchResponseprintable;
         }
-        public static async Task<ProxyInfo> GetActiveProxyAsync()
+        public static async Task<ProxyInfo> GetActiveProxyAsync(bool useProxy=true)
         {
-            var elasticsearchServiceProxies = new ElasticsearchService<ProxyInfo>("proxies");
-
-            // Fetch all proxy documents from Elasticsearch
-            var searchResponseProxies = await elasticsearchServiceProxies.SearchAllDocumentsAsync();
-            var proxiesList = searchResponseProxies.ToList();
-
-            if (!proxiesList.Any())
+            if (useProxy)
             {
-                return null; // No proxies available
+                var elasticsearchServiceProxies = new ElasticsearchService<ProxyInfo>("proxies");
+
+                // Fetch all proxy documents from Elasticsearch
+                var searchResponseProxies = await elasticsearchServiceProxies.SearchAllDocumentsAsync();
+                var proxiesList = searchResponseProxies.ToList();
+
+                if (!proxiesList.Any())
+                {
+                    return null; // No proxies available
+                }
+
+                // Select a random proxy from the list
+                var random = new Random();
+                var randomProxy = proxiesList[random.Next(proxiesList.Count)];
+
+                // Check if the selected proxy is active or implement logic to validate the proxy
+                bool isProxyActive = randomProxy != null; // Replace with actual validation logic
+
+                // Return the random proxy if active, otherwise return null or handle accordingly
+                return isProxyActive ? randomProxy : null;
             }
-
-            // Select a random proxy from the list
-            var random = new Random();
-            var randomProxy = proxiesList[random.Next(proxiesList.Count)];
-
-            // Check if the selected proxy is active or implement logic to validate the proxy
-            bool isProxyActive = randomProxy != null; // Replace with actual validation logic
-
-            // Return the random proxy if active, otherwise return null or handle accordingly
-            return isProxyActive ? randomProxy : null;
+            else
+            {
+                return new ProxyInfo() { Url=string.Empty};
+            }
+            
         }
         private static async Task<ProxyInfo> TestProxyAsync(ProxyInfo proxy)
         {
