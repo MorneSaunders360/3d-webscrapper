@@ -74,13 +74,13 @@ namespace WebScrapperFunctionApp
             Console.WriteLine($"Found Printable Detial For Processsing {dtRequest.Count()}");
 
             List<Printable> dtResponse = new List<Printable>();
-            var useProxy = await ProxyTesterService.GetActiveProxyAsync(false);
-            var httpClientHandler = new HttpClientHandler()
-            {
-                Proxy = new WebProxy(useProxy.Url),
-                UseProxy = false
-            };
-            Console.WriteLine($"Using Proxy {useProxy.Url}");
+            //var useProxy = await ProxyTesterService.GetActiveProxyAsync(false);
+            //var httpClientHandler = new HttpClientHandler()
+            //{
+            //    Proxy = new WebProxy(useProxy.Url),
+            //    UseProxy = false
+            //};
+            //Console.WriteLine($"Using Proxy {useProxy.Url}");
             var tasks = dtRequest.Select(async printable =>
             {
                 try
@@ -89,7 +89,7 @@ namespace WebScrapperFunctionApp
 
                     if (printable.Type.ToLower() == "printables" && (printable.PrintableDetials == null || printable.PrintableDetials.Zip_data == null || printable.PrintableDetials.Zip_data.Files.Count == 0))
                     {
-                        var client = new HttpClient(httpClientHandler);
+                        var client = new HttpClient();
 
                         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
                         string randomUserAgent = userAgents[randomIndex];
@@ -121,7 +121,7 @@ namespace WebScrapperFunctionApp
                                 {
                                     var tasksStl = PrintablesDetialApi.Data.Print.Stls.Select(async item =>
                                     {
-                                        var clientSingleFile = new HttpClient(httpClientHandler);
+                                        var clientSingleFile = new HttpClient();
                                         var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
                                         string randomUserAgent = userAgents[randomIndex];
                                         requestSingleFile.Headers.Add("User-Agent", randomUserAgent);
@@ -148,7 +148,7 @@ namespace WebScrapperFunctionApp
                                 {
                                     var tasksGcodes = PrintablesDetialApi.Data.Print.Gcodes.Select(async item =>
                                     {
-                                        var clientSingleFile = new HttpClient(httpClientHandler);
+                                        var clientSingleFile = new HttpClient();
                                         var requestSingleFile = new HttpRequestMessage(HttpMethod.Post, "https://api.printables.com/graphql/");
                                         requestSingleFile.Headers.Add("Accept", "application/json, text/plain, */*");
                                         string randomUserAgent = userAgents[randomIndex];
