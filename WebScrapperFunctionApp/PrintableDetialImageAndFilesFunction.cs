@@ -46,7 +46,7 @@ namespace WebScrapperFunctionApp
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Detial files For Processsing {dtRequest.Count()}");
-            var tasks = dtRequest.Select(async doc =>
+            foreach (var doc in dtRequest)
             {
                 try
                 {
@@ -89,9 +89,9 @@ namespace WebScrapperFunctionApp
                 {
                     SentrySdk.CaptureException(ex);
                 }
-            });
+            }
 
-            await Task.WhenAll(tasks);
+    
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetialImageAndFilesFunctionHttp Finished {DateTime.Now}");
