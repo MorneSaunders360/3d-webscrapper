@@ -10,6 +10,10 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebScrapperFunctionApp.Services;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using Aspose.ThreeD.Formats;
+using Minio.DataModel.Args;
+using Minio.Exceptions;
+using Minio;
 
 namespace WebScrapperFunctionApp
 {
@@ -51,6 +55,13 @@ namespace WebScrapperFunctionApp
             {
                 return new BadRequestObjectResult(AppConfigReponse);
             }
+            IMinioClient minio = new MinioClient()
+                                        .WithEndpoint("s3storage.threedprintingservices.com")
+                                        .WithCredentials("5LW1eSOLVXSWCabAyKEj", "SdRrRqCXObDnbOtArqKofkiTdPzmum4zF5mYvzna")
+                                        .WithSSL()
+                                        .Build();
+            var bucketName = "images";
+            
             var elasticsearchService = new ElasticsearchService<Printable>("printables");
             int Counter = 0;
             Console.WriteLine($"Found Printable Image For Processsing {dtRequest.Count()}");
@@ -59,7 +70,8 @@ namespace WebScrapperFunctionApp
             {
                 try
                 {
-                    string link = await BlobSerivce.UploadFile(doc.Thumbnail, $"{doc.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(doc.Thumbnail)}", "images");
+                    var FileNewName = $"{doc.Id}_{Guid.NewGuid()}_{Guid.NewGuid()}{Path.GetExtension(doc.Thumbnail)}";
+                    string link = await BlobSerivce.UploadFile(doc.Thumbnail, FileNewName, bucketName);
                     if (!string.IsNullOrEmpty(link))
                     {
                         doc.Thumbnail = link;
@@ -67,6 +79,21 @@ namespace WebScrapperFunctionApp
 
                         Counter++;
                         Console.WriteLine($"Printable Image Uploaded {Counter}_{doc.Id}");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var putObjectArgs = new RemoveObjectArgs()
+                                           .WithBucket(bucketName)
+                                           .WithObject(FileNewName);
+
+                            await minio.RemoveObjectAsync(putObjectArgs);
+                        }
+                        catch (MinioException e)
+                        {
+                            Console.WriteLine("Error: " + e);
+                        }
                     }
                 }
                 catch (Exception ex)
