@@ -13,8 +13,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebScrapperFunctionApp.Dto;
-using WebScrapperFunctionApp.Dto.PrintablesDetial;
-using WebScrapperFunctionApp.Services;
 using static System.Net.WebRequestMethods;
 
 namespace WebScrapperFunctionApp
