@@ -10,7 +10,6 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebScrapperFunctionApp.Services;
 using System.Linq;
-using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace WebScrapperFunctionApp
 {
@@ -49,7 +48,7 @@ namespace WebScrapperFunctionApp
             int Counter = 0;
             Console.WriteLine($"Found Printable Volume For Processsing {dtRequest.Count()}");
             List<Printable> dtResponse = new List<Printable>();
-            foreach (Printable doc in dtRequest) 
+            var tasks = dtRequest.Select(async doc =>
             {
                 try
                 {
@@ -89,7 +88,9 @@ namespace WebScrapperFunctionApp
                 {
                     SentrySdk.CaptureException(ex);
                 }
-            }
+            });
+
+            await Task.WhenAll(tasks);
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableVolumeFunctionFunctionHttp Finished {DateTime.Now}");

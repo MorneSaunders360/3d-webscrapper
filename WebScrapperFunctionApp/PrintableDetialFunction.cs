@@ -56,33 +56,53 @@ namespace WebScrapperFunctionApp
 
             List<Printable> dtResponse = new List<Printable>();
 
-            foreach (Printable printable in dtRequest) 
+            var tasks = dtRequest.Select(async printable =>
             {
-                var client = new HttpClient();
-                var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.thingiverse.com/things/{printable.Id.Replace("_Printables", string.Empty)}");
-                request.Headers.Add("accept", "application/json");
-                request.Headers.Add("Authorization", "Bearer ae49e79d6656ef8b0aa86fbc322706ec");
-                var response = await client.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    var PrintablesDetialApi = JsonConvert.DeserializeObject<ThingiverseItemDetialResponse>(await response.Content.ReadAsStringAsync());
-                    printable.CreatedDate = DateTime.Now;
-                    printable.PrintableDetials = new PrintableDetials()
+                    var client = new HttpClient();
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.thingiverse.com/things/{printable.Id.Replace("_Printables", string.Empty)}");
+                    request.Headers.Add("accept", "application/json");
+                    request.Headers.Add("Authorization", "Bearer ae49e79d6656ef8b0aa86fbc322706ec");
+                    var response = await client.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
                     {
-                        Creator = PrintablesDetialApi.Creator,
-                        Name = PrintablesDetialApi.Name,
-                        License = "Unknown",
-                        Public_url = PrintablesDetialApi.PublicUrl,
-                        Thumbnail = PrintablesDetialApi.Thumbnail,
-                        Url = PrintablesDetialApi.PublicUrl,
-                        Volume = 0,
+                        try
+                        {
+                            var reponseContemt = await response.Content.ReadAsStringAsync();
+                            var PrintablesDetialApi = JsonConvert.DeserializeObject<ThingiverseItemDetialResponse>(reponseContemt);
+                            printable.CreatedDate = DateTime.Now;
+                            printable.PrintableDetials = new PrintableDetials()
+                            {
+                                Creator = PrintablesDetialApi.Creator,
+                                Name = PrintablesDetialApi.Name,
+                                License = "Unknown",
+                                Public_url = PrintablesDetialApi.PublicUrl,
+                                Thumbnail = PrintablesDetialApi.Thumbnail,
+                                Url = PrintablesDetialApi.PublicUrl,
+                                Volume = 0,
 
-                    };
-                    printable.PrintableDetials.Zip_data = PrintablesDetialApi.ZipData;
-                    dtResponse.Add(printable);
-                    Console.WriteLine($"Printable Detail Updated {Counter++}");
+                            };
+                            printable.PrintableDetials.Zip_data = PrintablesDetialApi.ZipData;
+                            dtResponse.Add(printable);
+                            Console.WriteLine($"Printable Detail Updated {Counter++}_{printable.Id}");
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+                    
+                    }
                 }
-            }
+                catch (Exception ex)
+                {
+
+     
+                }
+            
+            });
+
+            await Task.WhenAll(tasks);
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetialFunction Finished {DateTime.Now}");

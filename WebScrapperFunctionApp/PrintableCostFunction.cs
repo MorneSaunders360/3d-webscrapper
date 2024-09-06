@@ -14,7 +14,6 @@ using Aspose.ThreeD.Shading;
 using AndreasReitberger.Print3d.Models;
 using AndreasReitberger.Print3d.Enums;
 using AndreasReitberger.Print3d.Models.MaterialAdditions;
-using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace WebScrapperFunctionApp
 {
@@ -56,7 +55,7 @@ namespace WebScrapperFunctionApp
             int Counter = 0;
             List<Printable> dtResponse = new List<Printable>();
             Console.WriteLine($"Found Printable Cost For Processsing {dtRequest.Count()}");
-            foreach (var doc in dtRequest)
+            var tasks = dtRequest.Select(async doc =>
             {
                 try
                 {
@@ -88,7 +87,9 @@ namespace WebScrapperFunctionApp
                 {
                     SentrySdk.CaptureException(ex);
                 }
-            }
+            });
+
+            await Task.WhenAll(tasks);
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableCostFunctionHttp Finished {DateTime.Now}");
