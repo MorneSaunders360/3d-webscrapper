@@ -59,7 +59,7 @@ namespace WebScrapperFunctionApp
                         if (VolumeSum != 0)
                         {
                             doc.PrintableDetials.Volume = VolumeSum;
-                            if (doc.PrintableDetials.Zip_data.Files.Count > 1)
+                            if (doc.PrintableDetials.Zip_data.Files.Count >= 1)
                             {
                                 foreach (var item in doc.PrintableDetials.Zip_data.Files)
                                 {
