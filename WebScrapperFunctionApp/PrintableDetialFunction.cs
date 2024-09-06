@@ -56,7 +56,7 @@ namespace WebScrapperFunctionApp
 
             List<Printable> dtResponse = new List<Printable>();
 
-            var tasks = dtRequest.Select(async printable =>
+            foreach (Printable printable in dtRequest) 
             {
                 var client = new HttpClient();
                 var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.thingiverse.com/things/{printable.Id.Replace("_Printables", string.Empty)}");
@@ -82,9 +82,7 @@ namespace WebScrapperFunctionApp
                     dtResponse.Add(printable);
                     Console.WriteLine($"Printable Detail Updated {Counter++}");
                 }
-            });
-
-            await Task.WhenAll(tasks);
+            }
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetialFunction Finished {DateTime.Now}");

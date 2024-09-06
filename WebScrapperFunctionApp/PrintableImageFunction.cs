@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using WebScrapperFunctionApp.Services;
+using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace WebScrapperFunctionApp
 {
@@ -26,6 +28,13 @@ namespace WebScrapperFunctionApp
             HttpRequest req)
         {
 
+            var useProxy = await ProxyTesterService.GetActiveProxyAsync();
+            var httpClientHandler = new HttpClientHandler()
+            {
+                Proxy = new WebProxy(useProxy.Url),
+                UseProxy = true
+            };
+            var client = new HttpClient(httpClientHandler);
             string reqContent = await new StreamReader(req.Body).ReadToEndAsync();
             Printable AppConfigReponse = new();
             List<Printable> dtRequest;
@@ -46,7 +55,7 @@ namespace WebScrapperFunctionApp
             int Counter = 0;
             Console.WriteLine($"Found Printable Image For Processsing {dtRequest.Count()}");
             List<Printable> dtResponse = new List<Printable>();
-            var tasks = dtRequest.Select(async doc =>
+            foreach (Printable doc in dtRequest)
             {
                 try
                 {
@@ -55,7 +64,7 @@ namespace WebScrapperFunctionApp
                     {
                         doc.Thumbnail = link;
                         dtResponse.Add(doc);
-                        
+
                         Counter++;
                         Console.WriteLine($"Printable Image Uploaded {Counter}_{doc.Id}");
                     }
@@ -64,9 +73,8 @@ namespace WebScrapperFunctionApp
                 {
                     SentrySdk.CaptureException(ex);
                 }
-            });
+            }
 
-            await Task.WhenAll(tasks);
             Func<Printable, string> idSelector = doc => doc.Id.ToString();
             await elasticsearchService.BulkUpsertDocuments(dtResponse, idSelector).ConfigureAwait(false);
             return new OkObjectResult($"TimerTrigger - PrintableDetailFunction Finished {DateTime.Now}");
